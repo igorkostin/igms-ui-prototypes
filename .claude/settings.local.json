@@ -8,7 +8,15 @@
       "Bash(awk '/HeroPlatformPageL2_hero/{flag=1} flag{print; if\\(/<\\\\/section>|<\\\\/header>|<\\\\/div>/ && ++c>30\\) exit}' /tmp/salesloft.html)",
       "Bash(curl -s \"https://www.salesloft.com/_next/static/media/dot-ring-full-green.a865d360.svg\" -o /tmp/dot-ring-full-green.svg)",
       "Bash(grep -oE '@keyframes [A-Za-z0-9_]*rotate[^}]{0,200}\\\\}[^}]{0,200}\\\\}' /tmp/sl_c8556ea5cb75f109.css)",
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations log --oneline -10)",
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations remote -v)",
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations branch --show-current)",
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations diff --stat HEAD)",
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations status -s)",
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations diff -- .claude/settings.local.json)",
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations add README.md .claude/settings.local.json)",
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations commit -m ' *)"
     ]
   }
 }
