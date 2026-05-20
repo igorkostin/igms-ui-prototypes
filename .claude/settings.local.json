@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36\" \"https://www.salesloft.com/platform/forecast/AI-forecast\" -o /tmp/salesloft.html)",
+      "Read(//tmp/**)",
+      "Bash(grep -oiE 'canvas|particles|tsparticles|three\\\\.js|vanta|svg[^a-z]|matter|p5\\\\.js|gsap' /tmp/salesloft.html | sort | uniq -c | sort -rn | head -30)",
+      "Bash(grep -oiE 'class=\"[^\"]*\\(hero|particle|dot|animation|canvas|bg|background\\)[^\"]*\"' /tmp/salesloft.html | head -40)",
+      "Bash(awk '/HeroPlatformPageL2_hero/{flag=1} flag{print; if\\(/<\\\\/section>|<\\\\/header>|<\\\\/div>/ && ++c>30\\) exit}' /tmp/salesloft.html)",
+      "Bash(curl -s \"https://www.salesloft.com/_next/static/media/dot-ring-full-green.a865d360.svg\" -o /tmp/dot-ring-full-green.svg)",
+      "Bash(grep -oE '@keyframes [A-Za-z0-9_]*rotate[^}]{0,200}\\\\}[^}]{0,200}\\\\}' /tmp/sl_c8556ea5cb75f109.css)",
+      "Bash(python3)"
+    ]
+  }
+}

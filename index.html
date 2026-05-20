@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dot-ring hero animation — prototype</title>
+  <link rel="stylesheet" href="./styles.css?v=6" />
+</head>
+<body>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <h1>AI Forecast that<br/>actually pays&nbsp;off.</h1>
+        <p>Predictive insights for your team — built into the workflow your reps already use. Less guesswork, more revenue.</p>
+        <button class="cta">Request a Demo →</button>
+      </div>
+
+      <div class="hero-visual">
+        <!-- The dot ring host. The script injects an SVG into here. -->
+        <div id="dot-ring" class="dot-ring-host"></div>
+
+        <!-- Mock product screenshot — replace with a real <img> later. -->
+        <div class="hero-image" aria-label="Product preview">
+          <div class="topbar"><i></i><i></i><i></i></div>
+          <div class="body">
+            <div class="side">
+              <div class="row active"></div>
+              <div class="row"></div>
+              <div class="row"></div>
+              <div class="row"></div>
+              <div class="row"></div>
+            </div>
+            <div class="main">
+              <div class="card">
+                <div class="h">Pipeline</div>
+                <div class="v">$4.2M</div>
+              </div>
+              <div class="card">
+                <div class="h">Forecast</div>
+                <div class="v">$3.1M</div>
+              </div>
+              <div class="card wide">
+                <div class="h">Trend</div>
+                <div class="bars">
+                  <i style="height:30%"></i><i style="height:55%"></i><i style="height:42%"></i>
+                  <i style="height:70%"></i><i style="height:60%"></i><i style="height:85%"></i>
+                  <i style="height:75%"></i><i style="height:95%"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero2">
+    <div id="dot-ring-2" class="dot-ring-host horizon"></div>
+    <div class="hero2-inner">
+      <h2>Run every property on autopilot.</h2>
+      <p>Channel manager, automation, smart pricing — built for short-term rental operators who'd rather grow than wrangle calendars.</p>
+      <button class="cta">Start free trial →</button>
+    </div>
+  </section>
+
+  <aside class="controls">
+    <h3>Dot ring — controls</h3>
+
+    <div class="target-tabs">
+      <button class="target-tab active" data-target="hero1">Hero 1 — ring around image</button>
+      <button class="target-tab" data-target="hero2">Hero 2 — horizon arc</button>
+    </div>
+
+    <label>
+      Color (global) <span class="val" id="val-color">#B5D626</span>
+      <input id="color" type="color" value="#B5D626" />
+      <div class="swatches">
+        <button data-color="#B5D626" style="background:#B5D626" title="Salesloft green"></button>
+        <button data-color="#2A8C5A" style="background:#2A8C5A" title="iGMS green"></button>
+        <button data-color="#3B82F6" style="background:#3B82F6" title="Blue"></button>
+        <button data-color="#F59E0B" style="background:#F59E0B" title="Amber"></button>
+        <button data-color="#EC4899" style="background:#EC4899" title="Pink"></button>
+      </div>
+    </label>
+
+    <label>
+      Rotation duration <span class="val" id="val-speed">250 s</span>
+      <input id="speed" type="range" />
+    </label>
+
+    <label>
+      <span id="label-size-text">Ring size</span> <span class="val" id="val-size">140 %</span>
+      <input id="size" type="range" />
+    </label>
+
+    <label id="label-peak" hidden>
+      Peak offset <span class="val" id="val-peak">0 vw</span>
+      <input id="peak" type="range" min="-25" max="20" step="1" value="0" />
+    </label>
+
+    <label>
+      Density preset
+      <div class="preset-row" id="preset-row"></div>
+    </label>
+
+    <label>
+      Direction
+      <div class="preset-row">
+        <button data-dir="1" class="active">↻ cw</button>
+        <button data-dir="-1">↺ ccw</button>
+      </div>
+    </label>
+  </aside>
+
+  <script type="module">
+    import { DotRing, DOT_RING_PRESETS } from "./dot-ring.js?v=6";
+
+    const host1 = document.getElementById("dot-ring");
+    const ring1 = new DotRing(host1, {
+      rotationSeconds: 250,
+      direction: 1,
+      ...DOT_RING_PRESETS.default,
+    });
+
+    const host2 = document.getElementById("dot-ring-2");
+    const ring2 = new DotRing(host2, {
+      rotationSeconds: 1040,
+      direction: 1,
+      ...DOT_RING_PRESETS.horizon,
+    });
+
+    // Per-target config: each one carries its own slider ranges, preset list,
+    // and current values. The controls panel reads from the active target.
+    const targets = {
+      hero1: {
+        ring: ring1,
+        host: host1,
+        speed:  { min: 20,  max: 600,  step: 10, val: 250 },
+        size:   { min: 80,  max: 220,  step: 5,  val: 140, unit: "%",  label: "Ring size" },
+        presets: ["sparse", "default", "dense", "halo"],
+        currentPreset: "default",
+        direction: 1,
+        peak: null,   // not applicable
+      },
+      hero2: {
+        ring: ring2,
+        host: host2,
+        speed:  { min: 100, max: 2000, step: 20, val: 1040 },
+        size:   { min: 150, max: 600,  step: 10, val: 320, unit: "vw", label: "Ring width" },
+        presets: ["horizon-thin", "horizon", "horizon-thick", "horizon-soft"],
+        currentPreset: "horizon",
+        direction: 1,
+        peak: { min: -25, max: 20, step: 1, val: 1 },
+      },
+    };
+
+    let active = "hero1";
+
+    const root = document.documentElement;
+    const $ = (id) => document.getElementById(id);
+
+    // --- Color (global, shared by both rings) -----------------------------
+    function setColor(c) {
+      root.style.setProperty("--dot-color", c);
+      $("color").value = c;
+      $("val-color").textContent = c.toUpperCase();
+    }
+    $("color").addEventListener("input", (e) => setColor(e.target.value));
+    document.querySelectorAll(".swatches button").forEach((b) => {
+      b.addEventListener("click", () => setColor(b.dataset.color));
+    });
+
+    // --- Apply current target config to the controls UI -------------------
+    function syncUiFromTarget() {
+      const t = targets[active];
+
+      // Speed
+      const sp = $("speed");
+      sp.min = t.speed.min; sp.max = t.speed.max; sp.step = t.speed.step;
+      sp.value = t.speed.val;
+      $("val-speed").textContent = `${t.speed.val} s`;
+
+      // Size (width %, or vw for horizon)
+      const sz = $("size");
+      sz.min = t.size.min; sz.max = t.size.max; sz.step = t.size.step;
+      sz.value = t.size.val;
+      $("val-size").textContent = `${t.size.val} ${t.size.unit}`;
+      $("label-size-text").textContent = t.size.label;
+
+      // Peak offset (horizon only)
+      const peakLabel = $("label-peak");
+      if (t.peak) {
+        peakLabel.hidden = false;
+        const pk = $("peak");
+        pk.min = t.peak.min; pk.max = t.peak.max; pk.step = t.peak.step;
+        pk.value = t.peak.val;
+        $("val-peak").textContent = `${t.peak.val} vw`;
+      } else {
+        peakLabel.hidden = true;
+      }
+
+      // Preset buttons — rebuild the list for this target
+      const row = $("preset-row");
+      row.innerHTML = "";
+      for (const name of t.presets) {
+        const b = document.createElement("button");
+        b.dataset.preset = name;
+        b.textContent = name;
+        if (name === t.currentPreset) b.classList.add("active");
+        b.addEventListener("click", () => {
+          targets[active].currentPreset = name;
+          targets[active].ring.update(DOT_RING_PRESETS[name]);
+          row.querySelectorAll("button").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+        });
+        row.appendChild(b);
+      }
+
+      // Direction
+      document.querySelectorAll("[data-dir]").forEach((x) => {
+        x.classList.toggle("active", Number(x.dataset.dir) === t.direction);
+      });
+    }
+
+    // --- Slider handlers (read active target each time) -------------------
+    $("speed").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      targets[active].speed.val = v;
+      targets[active].ring.update({ rotationSeconds: v });
+      $("val-speed").textContent = `${v} s`;
+    });
+
+    $("size").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      const t = targets[active];
+      t.size.val = v;
+      t.host.style.width = `${v}${t.size.unit}`;
+      $("val-size").textContent = `${v} ${t.size.unit}`;
+    });
+
+    $("peak").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      targets[active].peak.val = v;
+      targets[active].host.style.top = `${v}vw`;
+      $("val-peak").textContent = `${v} vw`;
+    });
+
+    document.querySelectorAll("[data-dir]").forEach((b) => {
+      b.addEventListener("click", () => {
+        const dir = Number(b.dataset.dir);
+        targets[active].direction = dir;
+        targets[active].ring.update({ direction: dir });
+        document.querySelectorAll("[data-dir]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+      });
+    });
+
+    // --- Target tab switching ---------------------------------------------
+    document.querySelectorAll(".target-tab").forEach((b) => {
+      b.addEventListener("click", () => {
+        active = b.dataset.target;
+        document.querySelectorAll(".target-tab").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        syncUiFromTarget();
+      });
+    });
+
+    // First paint
+    syncUiFromTarget();
+  </script>
+</body>
+</html>
