@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hero04-refold — animated color rails (iGMS hero accent)</title>
+  <link rel="stylesheet" href="../shared/proto-nav.css" />
+  <link rel="stylesheet" href="../shared/design-tokens.css" />
+  <link rel="stylesheet" href="../shared/hero-base.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <nav class="proto-nav">
+    <a href="../">hub</a>
+    <a href="../dot-ring/">dot-ring</a>
+    <a href="../hero01-copperx/">copperx waves</a>
+    <a href="../hero02-castle/">castle blobs</a>
+    <a href="../hero03-trunk/">trunk mountains</a>
+    <a class="active" href="./">refold rails</a>
+  </nav>
+
+  <section class="hero">
+    <div id="rail-left"  class="rail rail-left"></div>
+    <div id="rail-right" class="rail rail-right"></div>
+
+    <div class="hero-inner">
+      <div class="rating">
+        <span class="rating-icons">★★★★★</span>
+        <span class="rating-text">1,300+ reviews</span>
+      </div>
+
+      <h1>Short-term rental software for hosts growing beyond <span class="brand">Airbnb</span></h1>
+
+      <p class="lede">
+        Connect Airbnb, VRBO, and Booking.com in one app. Easy to set up
+        and if you get stuck, a real person helps.
+      </p>
+
+      <div class="cta-row">
+        <button class="btn btn-primary">Start free trial</button>
+        <button class="btn btn-secondary">Book a demo</button>
+      </div>
+
+      <img
+        class="product-image"
+        src="../shared/igms-main-multicalendar-screen.png"
+        alt="iGMS multi-calendar dashboard"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  <aside class="controls">
+    <h3>Refold rails — controls</h3>
+    <div class="grid">
+      <label>
+        Bar count <span class="val" id="val-count">28</span>
+        <input id="barCount" type="range" min="8" max="60" step="1" value="28" />
+      </label>
+      <label>
+        Pulse duration <span class="val" id="val-anim">6.0 s</span>
+        <input id="animSeconds" type="range" min="1" max="20" step="0.2" value="6" />
+      </label>
+      <label>
+        Stagger <span class="val" id="val-stag">0.25 s</span>
+        <input id="staggerSeconds" type="range" min="0" max="1" step="0.02" value="0.25" />
+      </label>
+      <label>
+        Palette
+        <div class="preset-row" id="palette-row">
+          <button data-palette="iGMS" class="active">iGMS</button>
+          <button data-palette="warm">warm</button>
+          <button data-palette="cool">cool</button>
+          <button data-palette="rainbow">rainbow</button>
+        </div>
+      </label>
+    </div>
+  </aside>
+
+  <script type="module">
+    import { ColorRails, RAIL_PALETTES } from "./bars.js";
+
+    const left  = document.getElementById("rail-left");
+    const right = document.getElementById("rail-right");
+    const rails = new ColorRails([left, right]);
+
+    const $ = (id) => document.getElementById(id);
+
+    $("barCount").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      rails.update({ barCount: v });
+      $("val-count").textContent = v;
+    });
+    $("animSeconds").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      rails.update({ animSeconds: v });
+      $("val-anim").textContent = `${v.toFixed(1)} s`;
+    });
+    $("staggerSeconds").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      rails.update({ staggerSeconds: v });
+      $("val-stag").textContent = `${v.toFixed(2)} s`;
+    });
+    document.querySelectorAll("[data-palette]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-palette]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        rails.update({ palette: b.dataset.palette });
+      });
+    });
+  </script>
+</body>
+</html>

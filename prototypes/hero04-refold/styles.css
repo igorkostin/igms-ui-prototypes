@@ -1,0 +1,119 @@
+/* hero04-refold — animated color-bar rails left + right of the hero.
+ * Hero layout/typography comes from ../shared/hero-base.css.
+ * This file: just the rails and their animation. */
+
+/* Make room on both sides of the hero so the rails don't crowd the text. */
+.hero {
+  padding-left: 320px;
+  padding-right: 320px;
+}
+
+/* --- Rails -------------------------------------------------------------- */
+.rail {
+  position: absolute;
+  top: 80px;
+  bottom: 80px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  z-index: 1;
+  pointer-events: none;
+  /* --rail-dir is set per side from JS: 1 (left) or -1 (right).
+     Bars use it to flip the fade direction so the gradient always points
+     toward the page edge. */
+}
+.rail-left  { left:  0; }
+.rail-right { right: 0; transform: scaleX(-1); }   /* mirror right rail */
+
+.bar {
+  height: 5px;
+  width: 100%;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 25%,
+    var(--c, #FFD729) 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 0%;
+  animation-name: bar-pulse;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  /* duration & delay set inline from JS for staggered effect */
+  will-change: background-position;
+}
+
+/* The pulse slides the bright part of the gradient across, then back. */
+@keyframes bar-pulse {
+  0%   { background-position: 100% 0%; }
+  50%  { background-position:   0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar { animation: none; background-position: 0% 0%; }
+}
+
+/* Hide rails entirely below desktop — too narrow there to be tasteful. */
+@media (max-width: 1100px) {
+  .hero { padding-left: 24px; padding-right: 24px; }
+  .rail { display: none; }
+}
+
+/* --- Controls panel ----------------------------------------------------- */
+.controls {
+  max-width: var(--hero-max-width);
+  margin: 32px auto 80px;
+  padding: 22px 26px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.08);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+.controls h3 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.controls .grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px 22px;
+}
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-muted);
+}
+.controls label .val {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.controls input[type="range"] { width: 100%; }
+.controls .preset-row { display: flex; gap: 6px; }
+.controls .preset-row button {
+  flex: 1;
+  height: 30px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 6px;
+  background: var(--color-bg);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+.controls .preset-row button.active {
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-color: var(--color-text);
+}
+@media (max-width: 880px) {
+  .controls .grid { grid-template-columns: 1fr 1fr; }
+}
