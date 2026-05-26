@@ -98,6 +98,10 @@
         <input id="lightness" type="range" min="20" max="95" step="1" value="72" />
       </label>
       <label>
+        Vertical offset <span class="val" id="val-oy">0 px</span>
+        <input id="offsetY" type="range" min="-600" max="600" step="5" value="0" />
+      </label>
+      <label>
         Blend mode
         <select id="blend">
           <option value="normal">normal</option>
@@ -143,6 +147,7 @@
       hueRange:    { id: "hueRange",    valId: "val-hr",     fmt: (v) => `${v}°` },
       saturation:  { id: "saturation",  valId: "val-sat",    fmt: (v) => `${v}%` },
       lightness:   { id: "lightness",   valId: "val-li",     fmt: (v) => `${v}%` },
+      offsetY:     { id: "offsetY",     valId: "val-oy",     fmt: (v) => `${v} px` },
     };
 
     for (const [key, meta] of Object.entries(NUM_FIELDS)) {

@@ -36,6 +36,7 @@ const DEFAULTS = {
   hueRange: 80,
   saturation: 75,
   lightness: 72,
+  offsetY: 0,   // px shift of the whole wave stack from canvas vertical center
 };
 
 export class WaveField {
@@ -107,7 +108,7 @@ export class WaveField {
     const n = options.lineCount;
     const spacing = options.lineSpacing;
     const totalSpan = (n - 1) * spacing;
-    const centerY = h / 2;
+    const centerY = h / 2 + (options.offsetY || 0);
     const startY = centerY - totalSpan / 2;
 
     for (let i = 0; i < n; i++) {
