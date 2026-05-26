@@ -42,13 +42,16 @@ const PALETTES = {
   "blue-mono":     { outer: "#245ABC", brand: "#96C8FF" },
 };
 
+// Defaults captured from Igor's iteration on 2026-05-26. Not the team's
+// favored direction (loud yellow framing on white BG didn't land), kept
+// as a reference snapshot of the refold-style approach.
 const DEFAULTS = {
-  barCount: 60,
-  barHeight: 24,
-  minWidth: 25,
-  maxWidth: 95,
-  animSeconds: 5.0,
-  staggerSeconds: 0.10,
+  barCount: 12,
+  barHeight: 59,
+  minWidth: 14,
+  maxWidth: 38,
+  animSeconds: 3.2,
+  staggerSeconds: 0.23,
   palette: "yellow-blue",
   seed: 1,
 };
