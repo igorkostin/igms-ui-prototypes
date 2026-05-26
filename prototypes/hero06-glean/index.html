@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hero06-glean — soft mesh wash (iGMS hero accent)</title>
+  <link rel="stylesheet" href="../shared/proto-nav.css" />
+  <link rel="stylesheet" href="../shared/design-tokens.css" />
+  <link rel="stylesheet" href="../shared/hero-base.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <nav class="proto-nav">
+    <a href="../">hub</a>
+    <a href="../dot-ring/">dot-ring</a>
+    <a href="../hero01-copperx/">copperx waves</a>
+    <a href="../hero02-castle/">castle blobs</a>
+    <a href="../hero03-trunk/">trunk mountains</a>
+    <a href="../hero05-castle/">castle wash</a>
+    <a class="active" href="./">glean mesh</a>
+  </nav>
+
+  <section class="hero">
+    <!-- Mesh gradient layers — positioned absolutely behind content. -->
+    <div class="mesh mesh-primary"></div>
+    <div class="mesh mesh-accent"></div>
+    <div class="mesh mesh-corner"></div>
+    <div class="sweep"></div>
+
+    <div class="hero-inner">
+      <div class="rating">
+        <span class="rating-icons">★★★★★</span>
+        <span class="rating-text">1,300+ reviews</span>
+      </div>
+
+      <h1>Short-term rental software for hosts growing beyond <span class="brand">Airbnb</span></h1>
+
+      <p class="lede">
+        Connect Airbnb, VRBO, and Booking.com in one app. Easy to set up
+        and if you get stuck, a real person helps.
+      </p>
+
+      <div class="cta-row">
+        <button class="btn btn-primary">Start free trial</button>
+        <button class="btn btn-secondary">Book a demo</button>
+      </div>
+
+      <img
+        class="product-image"
+        src="../shared/igms-main-multicalendar-screen.png"
+        alt="iGMS multi-calendar dashboard"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  <section class="below-floor">
+    <div class="floor-inner">
+      <h2>What comes next on the page is plain white</h2>
+      <p>The mesh above is intentionally one big soft wash, similar to glean.com. Below the hero the page returns to a clean white surface for content sections.</p>
+    </div>
+  </section>
+
+  <aside class="controls">
+    <h3>Glean mesh — controls</h3>
+    <div class="grid">
+      <label class="span-all">
+        Palette (sampled from glean.com + iGMS moodboard)
+        <div class="preset-row" id="palette-row">
+          <button data-palette="glean">glean — purple+lime (default)</button>
+          <button data-palette="igms-warm" class="active">iGMS warm — orange+cream</button>
+          <button data-palette="igms-amber">iGMS amber — golden</button>
+          <button data-palette="igms-cool">iGMS cool — blue+amber</button>
+          <button data-palette="igms-terracotta">iGMS terracotta — earth</button>
+          <button data-palette="igms-dark">iGMS dark — espresso+amber</button>
+        </div>
+      </label>
+
+      <label>
+        Primary color <span class="val" id="val-c1">#FFA000</span>
+        <input id="c1" type="color" value="#FFA000" />
+      </label>
+      <label>
+        Accent color <span class="val" id="val-c2">#FFEAC8</span>
+        <input id="c2" type="color" value="#FFEAC8" />
+      </label>
+      <label>
+        Corner color <span class="val" id="val-c3">#FBC506</span>
+        <input id="c3" type="color" value="#FBC506" />
+      </label>
+
+      <label>
+        Mesh intensity <span class="val" id="val-int">1.0×</span>
+        <input id="intensity" type="range" min="0" max="2" step="0.05" value="1" />
+      </label>
+      <label>
+        Mesh size <span class="val" id="val-size">1.2×</span>
+        <input id="meshSize" type="range" min="0.5" max="2.5" step="0.05" value="1.2" />
+      </label>
+      <label>
+        Sweep opacity <span class="val" id="val-sw">0.10</span>
+        <input id="sweep" type="range" min="0" max="0.4" step="0.01" value="0.10" />
+      </label>
+      <label>
+        Base background
+        <div class="preset-row">
+          <button data-base="white" class="active">pure white</button>
+          <button data-base="warm">warm tint</button>
+          <button data-base="cool">cool tint</button>
+        </div>
+      </label>
+    </div>
+  </aside>
+
+  <script type="module">
+    /* All palettes ship as { primary, accent, corner, base, brandText? }.
+     * primary: dominant wash, big radial in the upper-right.
+     * accent:  secondary wash, smaller radial top-left.
+     * corner:  small punchy radial bottom-right (energy spot).
+     * base:    optional base bg color tint.
+     * brandText: optional override for the H1 "Airbnb" word color so the
+     *            highlight reads against the chosen wash. */
+    const PALETTES = {
+      // Sampled directly from glean.com/product/assistant
+      "glean": {
+        primary: "#E16BFF", accent: "#F1B7FF", corner: "#D8FD49",
+        base: "#FFFFFF", brandText: "#E16BFF",
+      },
+      // iGMS moodboard — brand orange + warm cream + amber accent
+      "igms-warm": {
+        primary: "#FFA000", accent: "#FFEAC8", corner: "#FBC506",
+        base: "#FFFFFF", brandText: "#FFA000",
+      },
+      // Monochrome golden — strongest brand vibe
+      "igms-amber": {
+        primary: "#FFD32C", accent: "#FFEAC8", corner: "#E4AF13",
+        base: "#FFFCF4", brandText: "#E4AF13",
+      },
+      // Cool counterpoint — uses the single blue in moodboard
+      "igms-cool": {
+        primary: "#006FFE", accent: "#E4E4FD", corner: "#FFC35E",
+        base: "#FFFFFF", brandText: "#FFA000",
+      },
+      // Earthy terracotta — warm photography-textures palette
+      "igms-terracotta": {
+        primary: "#C97A4F", accent: "#FFEAC8", corner: "#5C3B05",
+        base: "#FBF6EE", brandText: "#C97A4F",
+      },
+      // Dark mode — espresso surface with amber accents
+      "igms-dark": {
+        primary: "#5C3B05", accent: "#2F2310", corner: "#FFC35E",
+        base: "#1B1100", brandText: "#FFC35E",
+        darkMode: true,
+      },
+    };
+
+    const BASES = {
+      "white": "#FFFFFF",
+      "warm":  "#FFFCF4",
+      "cool":  "#F4F6F8",
+    };
+
+    const root = document.documentElement;
+    const $ = (id) => document.getElementById(id);
+
+    function applyPalette(name) {
+      const p = PALETTES[name];
+      if (!p) return;
+      root.style.setProperty("--mesh-c1", p.primary);
+      root.style.setProperty("--mesh-c2", p.accent);
+      root.style.setProperty("--mesh-c3", p.corner);
+      root.style.setProperty("--hero-bg-base", p.base);
+      root.style.setProperty("--brand-text", p.brandText || "#FFA000");
+      document.body.classList.toggle("dark-mode", !!p.darkMode);
+      $("c1").value = p.primary; $("val-c1").textContent = p.primary;
+      $("c2").value = p.accent;  $("val-c2").textContent = p.accent;
+      $("c3").value = p.corner;  $("val-c3").textContent = p.corner;
+      document.querySelectorAll("[data-palette]").forEach((x) =>
+        x.classList.toggle("active", x.dataset.palette === name));
+    }
+
+    // Color pickers — override per-channel
+    const colorBindings = [
+      ["c1", "--mesh-c1", "val-c1"],
+      ["c2", "--mesh-c2", "val-c2"],
+      ["c3", "--mesh-c3", "val-c3"],
+    ];
+    for (const [id, prop, valId] of colorBindings) {
+      $(id).addEventListener("input", (e) => {
+        const v = e.target.value;
+        root.style.setProperty(prop, v);
+        $(valId).textContent = v.toUpperCase();
+      });
+    }
+
+    $("intensity").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--mesh-intensity", v);
+      $("val-int").textContent = `${v.toFixed(2)}×`;
+    });
+    $("meshSize").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--mesh-size", v);
+      $("val-size").textContent = `${v.toFixed(2)}×`;
+    });
+    $("sweep").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--sweep-opacity", v);
+      $("val-sw").textContent = v.toFixed(2);
+    });
+
+    document.querySelectorAll("[data-base]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-base]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        root.style.setProperty("--hero-bg-base", BASES[b.dataset.base]);
+      });
+    });
+
+    document.querySelectorAll("[data-palette]").forEach((b) => {
+      b.addEventListener("click", () => applyPalette(b.dataset.palette));
+    });
+
+    // First paint — iGMS warm by default (brand-aligned)
+    applyPalette("igms-warm");
+  </script>
+</body>
+</html>

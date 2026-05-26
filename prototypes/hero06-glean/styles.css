@@ -1,0 +1,194 @@
+/* hero06-glean — soft mesh-gradient backdrop, glean.com-style.
+ *
+ * Single big "mesh" of three radial gradients (one dominant, two accents)
+ * sitting on a slightly-tinted base. Optional diagonal "sweep" overlay
+ * adds the subtle directional texture seen on glean's hero. No animation. */
+
+:root {
+  --mesh-c1: #FFA000;   /* primary wash (top-right, dominant) */
+  --mesh-c2: #FFEAC8;   /* accent wash (top-left) */
+  --mesh-c3: #FBC506;   /* corner spark (bottom-right) */
+  --hero-bg-base: #FFFFFF;
+  --mesh-intensity: 1.0;
+  --mesh-size: 1.2;
+  --sweep-opacity: 0.10;
+  --brand-text: #FFA000;
+}
+
+/* The whole hero gets the tinted base + the mesh stack. */
+.hero {
+  background: var(--hero-bg-base);
+}
+
+/* "Airbnb" highlight in the H1 follows the active palette. */
+h1 .brand { color: var(--brand-text); }
+
+/* --- Mesh layers --------------------------------------------------------- */
+.mesh {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  /* mesh-intensity acts as a global alpha multiplier via opacity */
+  opacity: var(--mesh-intensity);
+}
+.mesh-primary {
+  /* Dominant wash — large radial in the upper-right, like glean. */
+  width: calc(120vw * var(--mesh-size));
+  height: calc(120vw * var(--mesh-size));
+  right: -50%;
+  top: -40%;
+  background: radial-gradient(circle, var(--mesh-c1) 0%, transparent 55%);
+  opacity: calc(0.55 * var(--mesh-intensity));
+}
+.mesh-accent {
+  /* Secondary wash — softer, top-left. */
+  width: calc(90vw * var(--mesh-size));
+  height: calc(90vw * var(--mesh-size));
+  left: -30%;
+  top: -30%;
+  background: radial-gradient(circle, var(--mesh-c2) 0%, transparent 60%);
+  opacity: calc(0.70 * var(--mesh-intensity));
+}
+.mesh-corner {
+  /* Tiny punchy spot at bottom-right for energy. */
+  width: calc(60vw * var(--mesh-size));
+  height: calc(60vw * var(--mesh-size));
+  right: -10%;
+  bottom: -30%;
+  background: radial-gradient(circle, var(--mesh-c3) 0%, transparent 60%);
+  opacity: calc(0.40 * var(--mesh-intensity));
+}
+
+/* --- Sweep: subtle diagonal lighting overlay ----------------------------- */
+.sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, var(--sweep-opacity)) 35%,
+    transparent 60%
+  );
+}
+
+/* --- Dark mode (espresso base + amber accent on text) -------------------- */
+body.dark-mode {
+  background: var(--hero-bg-base);
+}
+body.dark-mode .hero {
+  background: var(--hero-bg-base);
+}
+body.dark-mode h1,
+body.dark-mode .rating-text,
+body.dark-mode .lede {
+  color: #F0E0C0;
+}
+body.dark-mode .rating-icons { color: #FFC35E; }
+body.dark-mode .rating {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 234, 200, 0.15);
+}
+body.dark-mode .btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: #F0E0C0;
+  border: 1px solid rgba(255, 234, 200, 0.2);
+}
+body.dark-mode .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dark-mode .below-floor { background: #1B1100; }
+body.dark-mode .below-floor h2,
+body.dark-mode .below-floor p { color: #F0E0C0; }
+
+/* --- "Floor below" demo --------------------------------------------------- */
+.below-floor {
+  background: #FFFFFF;
+  padding: 80px 24px;
+  display: flex;
+  justify-content: center;
+}
+.floor-inner {
+  max-width: 640px;
+  text-align: center;
+  color: var(--color-muted);
+}
+.floor-inner h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+.floor-inner p {
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* --- Controls panel ----------------------------------------------------- */
+.controls {
+  max-width: var(--hero-max-width);
+  margin: 0 auto 80px;
+  padding: 22px 26px;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.08);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+.controls h3 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.controls .grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px 22px;
+}
+.controls label.span-all { grid-column: 1 / -1; }
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-muted);
+}
+.controls label .val {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.controls input[type="color"] {
+  width: 100%; height: 34px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 6px; padding: 2px;
+}
+.controls input[type="range"] { width: 100%; }
+.controls .preset-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.controls .preset-row button {
+  flex: 1;
+  min-width: 90px;
+  height: 30px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 6px;
+  background: #FFFFFF;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.controls .preset-row button.active {
+  background: var(--color-text);
+  color: #FFFFFF;
+  border-color: var(--color-text);
+}
+
+@media (max-width: 880px) {
+  .controls .grid { grid-template-columns: 1fr 1fr; }
+}
