@@ -10,8 +10,8 @@
 | **hero01-copperx** | `/hero01-copperx/` | Поток горизонтальных волн на canvas | copperx.io/payment-links |
 | **hero02-castle** | `/hero02-castle/` | Мягкие пастельные блобы с drift'ом | castle.io/product/rules |
 
-Боевой URL: **http://design-prototype.airgms.com/** (DNS настраивается;
-пока через IP `54.245.205.132` с `Host:` заголовком).
+Боевой URL: **https://design-prototype.airgms.com/**
+Доступ — OIDC, только пользователи `@igms.com` (dev-зона, не публично).
 
 ## Структура папок
 

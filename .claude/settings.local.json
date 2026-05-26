@@ -29,7 +29,9 @@
       "Bash(git add *)",
       "Bash(chmod +x /Users/igor/Projects/igms-ui-animations/deploy.sh)",
       "Bash(./deploy.sh --dry)",
-      "Bash(./deploy.sh)"
+      "Bash(./deploy.sh)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

@@ -1,0 +1,170 @@
+/* Shared hero layout for all iGMS hero prototypes.
+ * Uses design tokens from design-tokens.css. Each prototype adds its own
+ * background effect on top of this layout.
+ *
+ * DOM expected:
+ *   <section class="hero">
+ *     <!-- prototype background goes here (canvas, divs, svg) -->
+ *     <div class="hero-inner">
+ *       <div class="rating">
+ *         <span class="rating-icons"> ★★★★★ </span>
+ *         <span class="rating-text">1,300+ reviews</span>
+ *       </div>
+ *       <h1>…</h1>
+ *       <p class="lede">…</p>
+ *       <div class="cta-row">
+ *         <button class="btn btn-primary">Start free trial</button>
+ *         <button class="btn btn-secondary">Book a demo</button>
+ *       </div>
+ *       <img class="product-image" src="…" />
+ *     </div>
+ *   </section>
+ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-weight: var(--fw-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-bg);
+  /* Top padding matches Figma — rating sits a comfortable distance below header */
+  padding: 100px 24px 80px;
+  display: flex;
+  justify-content: center;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;             /* sits above background effects */
+  width: 100%;
+  max-width: var(--hero-max-width);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  /* "Heading+illustration" container has 60px gap between heading-block and image.
+     The hero-block uses 24px gap to separate the rating from heading group below.
+     We manage these via margins on individual children to match Figma's
+     auto-layout flow without an extra wrapper. */
+}
+
+/* ---- Rating row ------------------------------------------------------- */
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rating-gap);
+  padding: var(--rating-padding);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: var(--hero-gap-rating);
+}
+.rating-icons {
+  color: var(--color-stars);
+  font-size: var(--fs-stars);
+  font-weight: var(--fw-stars);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.rating-text {
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  color: var(--color-faint);
+}
+
+/* ---- Title ------------------------------------------------------------- */
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-h1);
+  font-weight: var(--fw-h1);
+  color: var(--color-h1);
+  letter-spacing: 0;
+  margin: 0 0 var(--hero-gap-title-desc);
+  max-width: var(--hero-title-max-width);
+}
+/* Brand-color word inside the H1 (e.g. "Airbnb") — matches Figma char-style override */
+h1 .brand { color: var(--color-brand); }
+
+/* ---- Description ------------------------------------------------------- */
+.lede {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-body);
+  color: var(--color-body);
+  margin: 0 0 var(--hero-gap-cta);
+  max-width: var(--hero-desc-max-width);
+}
+
+/* ---- CTA buttons ------------------------------------------------------- */
+.cta-row {
+  display: flex;
+  gap: var(--btn-gap);
+  margin-bottom: var(--hero-gap-image);
+}
+.btn {
+  font-family: var(--font-display);
+  font-size: var(--fs-btn);
+  line-height: var(--lh-btn);
+  font-weight: var(--fw-btn);
+  color: var(--color-btn-text);
+  padding: var(--btn-padding);
+  height: var(--btn-height);
+  border-radius: var(--btn-radius);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--color-brand);
+}
+.btn-primary:hover { background: #F5C71A; }   /* slight darken */
+.btn-secondary {
+  background: var(--color-bg);
+  border: var(--btn-border);
+}
+.btn-secondary:hover { border-color: #B8B8B8; }
+
+/* ---- Product image ----------------------------------------------------- */
+.product-image {
+  width: 100%;
+  max-width: var(--hero-max-width);
+  height: auto;
+  display: block;
+  border-radius: 14px;
+  background: var(--color-bg);
+  /* Figma image has a subtle ambient lift — softer than my earlier shadow */
+  box-shadow: var(--shadow-card);
+}
+
+/* ---- Reduced-motion ---------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* ---- Mobile scale-down ------------------------------------------------- */
+@media (max-width: 880px) {
+  .hero { padding: 60px 18px 60px; }
+  h1 { font-size: clamp(30px, 6.5vw, 44px); line-height: 1.1; }
+  .lede { font-size: 16px; line-height: 1.5; }
+  .cta-row { flex-direction: column; width: 100%; max-width: 320px; gap: 12px; }
+  .btn { width: 100%; padding: 12px 24px; }
+}

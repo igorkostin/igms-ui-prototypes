@@ -51,11 +51,11 @@ done
 if [ -n "$TARGET" ]; then
   SRC="${SRC_ROOT}/${TARGET}/"
   DST="${REMOTE_USER}@${REMOTE_HOST_SSH}:${REMOTE_ROOT}/${TARGET}/"
-  URL="http://${REMOTE_HOST_URL}/${TARGET}/"
+  URL="https://${REMOTE_HOST_URL}/${TARGET}/"
 else
   SRC="${SRC_ROOT}/"
   DST="${REMOTE_USER}@${REMOTE_HOST_SSH}:${REMOTE_ROOT}/"
-  URL="http://${REMOTE_HOST_URL}/"
+  URL="https://${REMOTE_HOST_URL}/"
 fi
 
 echo "▶ ${SRC}"

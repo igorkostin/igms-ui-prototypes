@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>hero02-castle — soft color blobs (iGMS hero accent)</title>
   <link rel="stylesheet" href="../shared/proto-nav.css" />
+  <link rel="stylesheet" href="../shared/design-tokens.css" />
+  <link rel="stylesheet" href="../shared/hero-base.css" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -24,9 +26,12 @@
     <div class="blob blob-4"></div>
 
     <div class="hero-inner">
-      <div class="badge">★★★★★ 1,300+ reviews</div>
+      <div class="rating">
+        <span class="rating-icons">★★★★★</span>
+        <span class="rating-text">1,300+ reviews</span>
+      </div>
 
-      <h1>Short-term rental software<br/>for hosts <span class="brand">growing beyond Airbnb</span></h1>
+      <h1>Short-term rental software for hosts growing beyond <span class="brand">Airbnb</span></h1>
 
       <p class="lede">
         Connect Airbnb, VRBO, and Booking.com in one app. Easy to set up
@@ -34,8 +39,8 @@
       </p>
 
       <div class="cta-row">
-        <button class="cta-primary">Start free trial</button>
-        <button class="cta-secondary">Book a demo</button>
+        <button class="btn btn-primary">Start free trial</button>
+        <button class="btn btn-secondary">Book a demo</button>
       </div>
 
       <img
