@@ -243,15 +243,25 @@ export const WAVE_PRESETS = {
     hueStart: 0, hueRange: 280, saturation: 80, lightness: 65, opacity: 0.28,
     fps: 30, samples: 80, harmonics: 3, monoColor: null,
   },
-  // iGMS — current production baseline. Mono brand yellow, 1 harmonic,
-  // 30 fps, 40 samples → ~10× less CPU than the old multi-color version
-  // while keeping the same visual character (Igor's rev 3 geometry).
-  igms: {
+  // iGMS-1 — lean baseline. Mono brand yellow, 1 harmonic, 30 fps,
+  // 40 samples → ~10× less CPU than a full multi-color render. Quiet,
+  // brand-aligned, MacBook-Air friendly.
+  "igms-1": {
     lineCount: 38, lineSpacing: 11, amplitude: 18, wavelength: 930,
     speed: 0.6, lineWidth: 1.1, opacity: 0.26,
     hueStart: 30, hueRange: 150, saturation: 54, lightness: 54,
     offsetY: 105,
     fps: 30, samples: 40, harmonics: 1, monoColor: "#FFD729",
+  },
+  // iGMS-2 — richer, multi-hue variant. Tight line spacing, wide hue
+  // sweep (280°), 3 harmonics for organic curves. Heavier but still
+  // capped at 30 fps. Hue ramp on (no mono color).
+  "igms-2": {
+    lineCount: 68, lineSpacing: 7, amplitude: 72, wavelength: 710,
+    speed: 0.7, lineWidth: 1.2, opacity: 0.19,
+    hueStart: 20, hueRange: 280, saturation: 80, lightness: 65,
+    offsetY: 105,
+    fps: 30, samples: 80, harmonics: 3, monoColor: null,
   },
   // Aurora — narrower amplitude, cool hues, smoother.
   aurora: {

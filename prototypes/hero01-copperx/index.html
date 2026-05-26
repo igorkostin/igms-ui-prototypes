@@ -141,10 +141,11 @@
       <label class="span-all">
         Preset
         <div class="preset-row">
+          <button data-preset="igms-1" class="active">iGMS-1 (default)</button>
+          <button data-preset="igms-2">iGMS-2</button>
           <button data-preset="pastel">pastel</button>
           <button data-preset="calm">calm</button>
           <button data-preset="aurora">aurora</button>
-          <button data-preset="igms" class="active">iGMS</button>
           <button data-preset="vivid">vivid</button>
         </div>
       </label>
@@ -155,7 +156,7 @@
     import { WaveField, WAVE_PRESETS } from "./waves.js";
 
     const canvas = document.getElementById("wave-canvas");
-    const wave = new WaveField(canvas, WAVE_PRESETS.igms);
+    const wave = new WaveField(canvas, WAVE_PRESETS["igms-1"]);
     wave.start();
 
     const $ = (id) => document.getElementById(id);
@@ -240,8 +241,8 @@
     const _origApplyPreset = applyPreset;
     applyPreset = (name) => { _origApplyPreset(name); syncPerfUi(); };
 
-    // Sync sliders + labels to the iGMS preset on first load.
-    applyPreset("igms");
+    // Sync sliders + labels to the iGMS-1 preset on first load.
+    applyPreset("igms-1");
     syncPerfUi();
   </script>
 </body>
