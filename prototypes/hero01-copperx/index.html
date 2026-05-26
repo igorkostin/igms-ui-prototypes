@@ -104,6 +104,29 @@
         <input id="offsetY" type="range" min="-600" max="600" step="5" value="0" />
       </label>
       <label>
+        FPS cap <span class="val" id="val-fps">30</span>
+        <input id="fps" type="range" min="10" max="60" step="5" value="30" />
+      </label>
+      <label>
+        Samples (quality) <span class="val" id="val-sm">60</span>
+        <input id="samples" type="range" min="20" max="160" step="5" value="60" />
+      </label>
+      <label>
+        Harmonics
+        <div class="preset-row">
+          <button data-harmonics="1">1 (light)</button>
+          <button data-harmonics="2" class="active">2 (smooth)</button>
+          <button data-harmonics="3">3 (organic)</button>
+        </div>
+      </label>
+      <label>
+        Mono color
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input id="monoColor" type="color" value="#FFD729" style="flex:0 0 50px; height:30px;" />
+          <button id="monoOff" type="button" style="flex:1; height:30px; border:1px solid #e7eee9; border-radius:6px; background:#fff; cursor:pointer; font-size:12px;">use hue ramp</button>
+        </div>
+      </label>
+      <label>
         Blend mode
         <select id="blend">
           <option value="normal">normal</option>
@@ -150,6 +173,8 @@
       saturation:  { id: "saturation",  valId: "val-sat",    fmt: (v) => `${v}%` },
       lightness:   { id: "lightness",   valId: "val-li",     fmt: (v) => `${v}%` },
       offsetY:     { id: "offsetY",     valId: "val-oy",     fmt: (v) => `${v} px` },
+      fps:         { id: "fps",         valId: "val-fps",    fmt: (v) => `${v}` },
+      samples:     { id: "samples",     valId: "val-sm",     fmt: (v) => `${v}` },
     };
 
     for (const [key, meta] of Object.entries(NUM_FIELDS)) {
@@ -186,8 +211,37 @@
       });
     });
 
+    // Harmonics buttons
+    document.querySelectorAll("[data-harmonics]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-harmonics]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        wave.update({ harmonics: Number(b.dataset.harmonics) });
+      });
+    });
+
+    // Mono color picker + "use hue ramp" toggle
+    $("monoColor").addEventListener("input", (e) => {
+      wave.update({ monoColor: e.target.value });
+    });
+    $("monoOff").addEventListener("click", () => {
+      wave.update({ monoColor: null });
+    });
+
+    // Sync UI to applied preset (handles harmonics / monoColor buttons).
+    function syncPerfUi() {
+      const o = wave.options;
+      document.querySelectorAll("[data-harmonics]").forEach((x) =>
+        x.classList.toggle("active", Number(x.dataset.harmonics) === o.harmonics));
+      if (o.monoColor) $("monoColor").value = o.monoColor;
+    }
+    // Hook into applyPreset by wrapping it.
+    const _origApplyPreset = applyPreset;
+    applyPreset = (name) => { _origApplyPreset(name); syncPerfUi(); };
+
     // Sync sliders + labels to the iGMS preset on first load.
     applyPreset("igms");
+    syncPerfUi();
   </script>
 </body>
 </html>

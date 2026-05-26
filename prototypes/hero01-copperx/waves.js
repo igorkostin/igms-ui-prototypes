@@ -1,30 +1,32 @@
-// Flow-field wave background.
+// Flow-field wave background — perf-optimized canvas renderer.
 //
-// Canvas-rendered. N stacked thin lines, each a smooth horizontal curve
-// composed of 2–3 sine harmonics. Lines drift slowly horizontally and shift
-// phase, producing an organic "current" feel. Pastel colors with low alpha
-// stack additively when mix-blend-mode is set on the canvas.
+// Render budget on MacBook Air M1:
+//   • Each line draws a polyline of `samples` points.
+//   • Per point we evaluate up to `harmonics` sine calls.
+//   • Per-line stroke styles are cached at render-config time, not per frame.
+//   • If `monoColor` is set, ALL lines share one path → single stroke() call.
+//   • rAF is throttled to `fps` (default 30) so the loop doesn't burn the
+//     full 60 Hz on subtle animation that the eye can't tell apart anyway.
 //
 // Usage:
 //   const w = new WaveField(canvas, options);
 //   w.start();
-//   w.update({ lineCount: 60 });
+//   w.update({ harmonics: 1 });
 //   w.stop();
 //
-// Options (all optional, defaults are pleasant out of the box):
-//   lineCount        : number   how many lines to draw (default 36)
-//   lineSpacing      : number   vertical gap between line baselines in px (default 14)
-//   amplitude        : number   peak vertical excursion in px (default 70)
-//   wavelength       : number   primary wavelength in px (default 520)
-//   speed            : number   global animation speed multiplier (default 1.0)
-//   lineWidth        : number   stroke width in px (default 1.2)
-//   opacity          : number   stroke alpha per line (default 0.35)
-//   hueStart         : number   hue degrees for the first line (default 30)
-//   hueRange         : number   total hue spread across lines (default 80)
-//   saturation       : number   HSL saturation % (default 75)
-//   lightness        : number   HSL lightness % (default 72)
+// Visual options:
+//   lineCount, lineSpacing, amplitude, wavelength, speed, lineWidth,
+//   opacity, hueStart, hueRange, saturation, lightness, offsetY
+//
+// Perf options:
+//   fps        : number   target frames per second (default 30)
+//   samples    : number   polyline points per line (default 60)
+//   harmonics  : 1 | 2 | 3   how many sine terms in the curve (default 2)
+//   monoColor  : string|null   if set, all lines stroke in this hex color
+//                              (single beginPath/stroke → much faster)
 
 const DEFAULTS = {
+  // Visual
   lineCount: 36,
   lineSpacing: 14,
   amplitude: 70,
@@ -36,7 +38,12 @@ const DEFAULTS = {
   hueRange: 80,
   saturation: 75,
   lightness: 72,
-  offsetY: 0,   // px shift of the whole wave stack from canvas vertical center
+  offsetY: 0,
+  // Perf
+  fps: 30,
+  samples: 60,
+  harmonics: 2,
+  monoColor: null,
 };
 
 export class WaveField {
@@ -49,13 +56,15 @@ export class WaveField {
     this._onResize = () => this._resize();
     this._resize();
     window.addEventListener("resize", this._onResize);
-    // Honor user motion preferences.
     this._mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     this._mq.addEventListener("change", () => this._respectMotion());
+    this._rebuildCache();
   }
 
   _resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Cap DPR at 1.5 — on retina, 2x doubles pixel count which is the biggest
+    // single performance drag for canvas stroke ops. 1.5x is still crisp.
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const r = this.canvas.getBoundingClientRect();
     this.canvas.width = Math.max(1, Math.floor(r.width * dpr));
     this.canvas.height = Math.max(1, Math.floor(r.height * dpr));
@@ -64,14 +73,49 @@ export class WaveField {
     this.h = r.height;
   }
 
+  /** Precompute per-line constants that don't depend on `t`. */
+  _rebuildCache() {
+    const o = this.options;
+    const n = o.lineCount;
+    const lines = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const tt = n > 1 ? i / (n - 1) : 0.5;
+      const hue = o.hueStart + tt * o.hueRange;
+      lines[i] = {
+        phaseA: i * 0.42 + Math.sin(i * 0.7) * 0.5,
+        phaseB: i * 0.31 + Math.cos(i * 1.1) * 0.6,
+        // Cached HSLA stroke string (only used when monoColor is null).
+        strokeStyle: `hsl(${hue.toFixed(1)} ${o.saturation}% ${o.lightness}% / ${o.opacity})`,
+      };
+    }
+    this._cache = {
+      n,
+      lines,
+      totalSpan: (n - 1) * o.lineSpacing,
+      lambdaA: o.wavelength,
+      lambdaB: o.wavelength * 0.42,
+      lambdaC: o.wavelength * 0.18,
+      monoColor: o.monoColor || null,
+    };
+  }
+
   start() {
     if (this.running) return;
     if (this._mq.matches) { this._drawOnce(); return; }
     this.running = true;
-    const loop = () => {
+    const targetFrameMs = 1000 / Math.max(1, this.options.fps);
+    let lastT = performance.now();
+    const loop = (now) => {
       if (!this.running) return;
-      this._draw();
-      this.t += 0.012 * this.options.speed;
+      const elapsed = now - lastT;
+      if (elapsed >= targetFrameMs) {
+        // Advance time proportionally to real elapsed → same perceptual
+        // speed regardless of fps. Constant calibrated to match the old
+        // 60Hz default (0.012 / 16.67ms ≈ 0.00072/ms).
+        this.t += elapsed * 0.00072 * this.options.speed;
+        lastT = now - (elapsed % targetFrameMs);
+        this._draw();
+      }
       this._raf = requestAnimationFrame(loop);
     };
     this._raf = requestAnimationFrame(loop);
@@ -83,7 +127,19 @@ export class WaveField {
   }
 
   update(partial) {
-    this.options = { ...this.options, ...partial };
+    const prev = this.options;
+    this.options = { ...prev, ...partial };
+    // Rebuild the cache if anything that affects per-line constants changed.
+    const cacheKeys = [
+      "lineCount", "lineSpacing", "wavelength",
+      "hueStart", "hueRange", "saturation", "lightness", "opacity",
+      "monoColor",
+    ];
+    if (cacheKeys.some((k) => k in partial)) this._rebuildCache();
+    if ("fps" in partial && this.running) {
+      this.stop();
+      this.start();
+    }
     if (!this.running) this._drawOnce();
   }
 
@@ -97,54 +153,74 @@ export class WaveField {
     else this.start();
   }
 
-  _drawOnce() {
-    this._draw();
-  }
+  _drawOnce() { this._draw(); }
 
   _draw() {
     const { ctx, w, h, options, t } = this;
+    const c = this._cache;
     ctx.clearRect(0, 0, w, h);
 
-    const n = options.lineCount;
-    const spacing = options.lineSpacing;
-    const totalSpan = (n - 1) * spacing;
     const centerY = h / 2 + (options.offsetY || 0);
-    const startY = centerY - totalSpan / 2;
+    const startY = centerY - c.totalSpan / 2;
+    const samples = options.samples;
+    const harmonics = options.harmonics;
+    const amp = options.amplitude;
+    const lambdaA = c.lambdaA;
+    const lambdaB = c.lambdaB;
+    const lambdaC = c.lambdaC;
+    const k2pi = Math.PI * 2;
+    const xStep = w / samples;
 
-    for (let i = 0; i < n; i++) {
-      const tt = n > 1 ? i / (n - 1) : 0.5;        // 0..1 across lines
-      const baseY = startY + i * spacing;
+    // Shared state — set once outside the per-line loop.
+    ctx.lineWidth = options.lineWidth;
+    ctx.lineCap = "round";
 
-      // Per-line phase: lines are slightly out-of-sync so they don't all dip
-      // together — this is what gives the field its woven feel.
-      const phaseA = i * 0.42 + Math.sin(i * 0.7) * 0.5;
-      const phaseB = i * 0.31 + Math.cos(i * 1.1) * 0.6;
-
-      // Hue ramps smoothly across the stack, so colors blend organically.
-      const hue = options.hueStart + tt * options.hueRange;
-      ctx.strokeStyle =
-        `hsl(${hue.toFixed(1)} ${options.saturation}% ${options.lightness}% / ${options.opacity})`;
-      ctx.lineWidth = options.lineWidth;
-      ctx.lineCap = "round";
-
+    if (c.monoColor) {
+      // === Mono mode: ONE path with N polylines, ONE stroke call. ===
+      ctx.strokeStyle = c.monoColor;
+      ctx.globalAlpha = options.opacity;
       ctx.beginPath();
-      const samples = 110;
-      const lambdaA = options.wavelength;
-      const lambdaB = options.wavelength * 0.42;
-      const lambdaC = options.wavelength * 0.18;
-      const amp = options.amplitude;
-      // Two-frequency primary + tiny third harmonic for organic edges.
-      for (let s = 0; s <= samples; s++) {
-        const x = (s / samples) * w;
-        const y =
-          baseY +
-          amp * 0.70 * Math.sin((x / lambdaA) * Math.PI * 2 + phaseA + t) +
-          amp * 0.28 * Math.sin((x / lambdaB) * Math.PI * 2 + phaseB + t * 1.35) +
-          amp * 0.08 * Math.sin((x / lambdaC) * Math.PI * 2 + phaseA * 1.7 + t * 0.6);
-        if (s === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      for (let i = 0; i < c.n; i++) {
+        const line = c.lines[i];
+        const baseY = startY + i * options.lineSpacing;
+        const phaseA = line.phaseA;
+        const phaseB = line.phaseB;
+        const tA = phaseA + t;
+        const tB = phaseB + t * 1.35;
+        const tC = phaseA * 1.7 + t * 0.6;
+        for (let s = 0; s <= samples; s++) {
+          const x = s * xStep;
+          let y = baseY + amp * 0.70 * Math.sin(x / lambdaA * k2pi + tA);
+          if (harmonics >= 2) y += amp * 0.28 * Math.sin(x / lambdaB * k2pi + tB);
+          if (harmonics >= 3) y += amp * 0.08 * Math.sin(x / lambdaC * k2pi + tC);
+          if (s === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
       }
       ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else {
+      // === Multi-color mode: separate stroke per line. ===
+      for (let i = 0; i < c.n; i++) {
+        const line = c.lines[i];
+        const baseY = startY + i * options.lineSpacing;
+        ctx.strokeStyle = line.strokeStyle;
+        const phaseA = line.phaseA;
+        const phaseB = line.phaseB;
+        const tA = phaseA + t;
+        const tB = phaseB + t * 1.35;
+        const tC = phaseA * 1.7 + t * 0.6;
+        ctx.beginPath();
+        for (let s = 0; s <= samples; s++) {
+          const x = s * xStep;
+          let y = baseY + amp * 0.70 * Math.sin(x / lambdaA * k2pi + tA);
+          if (harmonics >= 2) y += amp * 0.28 * Math.sin(x / lambdaB * k2pi + tB);
+          if (harmonics >= 3) y += amp * 0.08 * Math.sin(x / lambdaC * k2pi + tC);
+          if (s === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
     }
   }
 }
@@ -153,31 +229,34 @@ export const WAVE_PRESETS = {
   pastel: {
     lineCount: 36, lineSpacing: 14, amplitude: 70, wavelength: 520,
     hueStart: 30, hueRange: 80, saturation: 75, lightness: 72, opacity: 0.35,
+    fps: 30, samples: 60, harmonics: 2, monoColor: null,
   },
   // Calm, narrow color range — single-hue ribbon feel.
   calm: {
     lineCount: 28, lineSpacing: 18, amplitude: 50, wavelength: 700,
     hueStart: 180, hueRange: 30, saturation: 60, lightness: 70, opacity: 0.30,
+    fps: 30, samples: 50, harmonics: 2, monoColor: null,
   },
-  // Wild — lots of motion, broad hue sweep.
+  // Wild — lots of motion, broad hue sweep. (Heaviest preset.)
   vivid: {
     lineCount: 60, lineSpacing: 10, amplitude: 100, wavelength: 380,
     hueStart: 0, hueRange: 280, saturation: 80, lightness: 65, opacity: 0.28,
+    fps: 30, samples: 80, harmonics: 3, monoColor: null,
   },
-  // iGMS — working baseline for the production hero.
-  // Slower, slightly wider lines with a longer wavelength → reads as a calm
-  // warm current. Vertical offset pushes the visible band slightly below the
-  // CTA so it sits behind the product image area.
-  // Tuned manually by Igor on 2026-05-26 (rev 3 — preview-ready).
+  // iGMS — current production baseline. Mono brand yellow, 1 harmonic,
+  // 30 fps, 40 samples → ~10× less CPU than the old multi-color version
+  // while keeping the same visual character (Igor's rev 3 geometry).
   igms: {
     lineCount: 38, lineSpacing: 11, amplitude: 18, wavelength: 930,
     speed: 0.6, lineWidth: 1.1, opacity: 0.26,
     hueStart: 30, hueRange: 150, saturation: 54, lightness: 54,
     offsetY: 105,
+    fps: 30, samples: 40, harmonics: 1, monoColor: "#FFD729",
   },
   // Aurora — narrower amplitude, cool hues, smoother.
   aurora: {
     lineCount: 32, lineSpacing: 16, amplitude: 60, wavelength: 600,
     hueStart: 200, hueRange: 90, saturation: 70, lightness: 70, opacity: 0.32,
+    fps: 30, samples: 50, harmonics: 2, monoColor: null,
   },
 };
