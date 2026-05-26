@@ -56,12 +56,12 @@
     <h3>Refold rails — controls</h3>
     <div class="grid">
       <label>
-        Bar count <span class="val" id="val-count">48</span>
-        <input id="barCount" type="range" min="12" max="120" step="1" value="48" />
+        Bar count <span class="val" id="val-count">60</span>
+        <input id="barCount" type="range" min="12" max="160" step="1" value="60" />
       </label>
       <label>
-        Bar height <span class="val" id="val-bh">16 px</span>
-        <input id="barHeight" type="range" min="6" max="40" step="1" value="16" />
+        Bar height <span class="val" id="val-bh">24 px</span>
+        <input id="barHeight" type="range" min="8" max="60" step="1" value="24" />
       </label>
       <label>
         Min width <span class="val" id="val-mn">25 %</span>
@@ -79,12 +79,15 @@
         Stagger <span class="val" id="val-stag">0.10 s</span>
         <input id="staggerSeconds" type="range" min="0" max="0.6" step="0.01" value="0.10" />
       </label>
-      <label>
-        Palette
+      <label class="palette-label">
+        Palette  (outer → brand inside)
         <div class="preset-row" id="palette-row">
-          <button data-palette="iGMS" class="active">iGMS yellow→mint</button>
-          <button data-palette="warm-mono">yellow→peach</button>
-          <button data-palette="cool">cool (A/B)</button>
+          <button data-palette="yellow-blue" class="active">blue → yellow</button>
+          <button data-palette="yellow-green">green → yellow</button>
+          <button data-palette="yellow-coral">coral → yellow</button>
+          <button data-palette="yellow-mono">olive → yellow</button>
+          <button data-palette="yellow-purple">purple → yellow</button>
+          <button data-palette="blue-mono">blue (A/B, no yellow)</button>
         </div>
       </label>
     </div>

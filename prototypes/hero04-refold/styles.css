@@ -27,13 +27,13 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 46%;                /* big — much closer to refold's actual size */
+  width: 46%;
   z-index: 1;
   pointer-events: none;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 0;                    /* no gaps between bars */
+  justify-content: flex-start;   /* fill from the top of the section down */
+  gap: 0;
   overflow: hidden;
 }
 .rail-left  { left: 0; }
@@ -44,18 +44,17 @@
 
 .bar {
   width: var(--w-min, 50%);
-  height: var(--bar-h, 16px);
-  /* The single gradient used by every bar. Brand color holds for the first
-     ~35% (visible solid stripe), transitions to accent at 65%, then fades
-     to transparent at 100% — like refold's pattern. */
+  height: var(--bar-h, 24px);
+  /* Gradient: cool/dark anchor at the OUTER page edge, brand color toward
+     the INNER edge (closer to content), fading to transparent so the bar
+     dissolves cleanly into the white hero. */
   background: linear-gradient(
     90deg,
-    var(--brand,  #FFD729)   0%,
-    var(--brand,  #FFD729)  35%,
-    var(--accent, #B6E5C3)  65%,
+    var(--outer, #1F88E5)   0%,
+    var(--outer, #1F88E5)  25%,
+    var(--brand, #FFD729)  65%,
     rgba(255, 255, 255, 0) 100%
   );
-  /* The width breathes between --w-min and --w-max. */
   animation-name: bar-breathe;
   animation-iteration-count: infinite;
   animation-direction: alternate;
@@ -134,6 +133,9 @@
   color: var(--color-bg);
   border-color: var(--color-text);
 }
+.controls label.palette-label { grid-column: 1 / -1; }
+.controls label.palette-label .preset-row { flex-wrap: wrap; }
+
 @media (max-width: 880px) {
   .controls .grid { grid-template-columns: 1fr 1fr; }
 }

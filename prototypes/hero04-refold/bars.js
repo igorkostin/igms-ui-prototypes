@@ -1,8 +1,11 @@
 // Refold-style color rails — two vertical stacks of horizontal bars at the
-// page edges. Each bar shares the same horizontal gradient (brand color on
-// the outer edge → soft accent → white toward the center). What animates is
-// the *width* of each bar: they breathe in/out independently with staggered
-// phase, so the inner silhouette ripples like a sound-level meter.
+// page edges. Bars are width-animated; the gradient direction goes from a
+// "cool" anchor color at the OUTER page edge, through the brand yellow,
+// fading to white at the INNER edge near content. The brand sits inside
+// the cool, so the eye reads the brand last (cleaner separation from the
+// page edge).
+//
+// All palette colors are sampled from the iGMS Figma main page.
 //
 // Usage:
 //   <div id="rail-left"  class="rail rail-left"></div>
@@ -13,32 +16,40 @@
 //   </script>
 //
 // Options:
-//   barCount       : number   bars per rail (default 48)
-//   barHeight      : number   px (default 16)
+//   barCount       : number   bars per rail (default 60)
+//   barHeight      : number   px height of each bar (default 24)
 //   minWidth       : number   percent — min bar extension (default 25)
 //   maxWidth       : number   percent — max bar extension (default 95)
 //   animSeconds    : number   breathe cycle (default 5.0)
 //   staggerSeconds : number   delay between adjacent bars (default 0.10)
-//   palette        : string   "iGMS" | "warm-mono" | "cool" (default "iGMS")
+//   palette        : string   key from PALETTES (default "yellow-blue")
 //   seed           : number   PRNG seed for width jitter (default 1)
 
+// Palettes use { outer, brand } — outer sits at the page edge, brand is the
+// "warmer/closer-to-content" stop. The gradient fades to transparent after.
 const PALETTES = {
-  // brand yellow → mint accent → white (transparent)
-  iGMS:      { brand: "#FFD729", accent: "#B6E5C3" },
-  // brand yellow → soft peach → white
-  "warm-mono": { brand: "#FFD729", accent: "#FFD0A8" },
-  // cool — using blue brand + cyan accent (for A/B comparison)
-  cool:      { brand: "#3B82F6", accent: "#9EE9FF" },
+  // blue → yellow — cool outer anchor, warm brand inside. Strong contrast.
+  "yellow-blue":   { outer: "#1F88E5", brand: "#FFD729" },
+  // green → yellow — fresh, growth-y, softer transition (analogous hues).
+  "yellow-green":  { outer: "#62B970", brand: "#FFD729" },
+  // coral → yellow — warm-on-warm, energetic.
+  "yellow-coral":  { outer: "#FD5C63", brand: "#FFD729" },
+  // dark yellow → bright yellow — monochrome, most reserved.
+  "yellow-mono":   { outer: "#C79100", brand: "#FFD729" },
+  // purple → yellow — high-contrast complementary, more decorative.
+  "yellow-purple": { outer: "#5363AA", brand: "#FFD729" },
+  // blue-mono — no yellow, all cool. For A/B comparison if yellow feels off.
+  "blue-mono":     { outer: "#245ABC", brand: "#96C8FF" },
 };
 
 const DEFAULTS = {
-  barCount: 48,
-  barHeight: 16,
+  barCount: 60,
+  barHeight: 24,
   minWidth: 25,
   maxWidth: 95,
   animSeconds: 5.0,
   staggerSeconds: 0.10,
-  palette: "iGMS",
+  palette: "yellow-blue",
   seed: 1,
 };
 
@@ -62,21 +73,17 @@ export class ColorRails {
 
   _render() {
     const o = this.options;
-    const pal = PALETTES[o.palette] || PALETTES.iGMS;
+    const pal = PALETTES[o.palette] || PALETTES["yellow-blue"];
     const rand = mulberry32(o.seed);
 
-    // Apply gradient colors and bar height via CSS variables on each rail.
     for (const rail of this.rails) {
+      rail.style.setProperty("--outer", pal.outer);
       rail.style.setProperty("--brand", pal.brand);
-      rail.style.setProperty("--accent", pal.accent);
       rail.style.setProperty("--bar-h", `${o.barHeight}px`);
       rail.innerHTML = "";
 
       for (let i = 0; i < o.barCount; i++) {
-        // Each bar gets two width "anchor" values (min/max) and animates
-        // between them. We add some per-bar jitter so the visual rhythm
-        // isn't a perfect sine wave across the rail.
-        const jitter1 = (rand() - 0.5) * 12;   // ±6%
+        const jitter1 = (rand() - 0.5) * 12;
         const jitter2 = (rand() - 0.5) * 12;
         const wMin = Math.max(5,  o.minWidth + jitter1);
         const wMax = Math.min(100, o.maxWidth + jitter2);
@@ -87,7 +94,7 @@ export class ColorRails {
         bar.style.setProperty("--w-min", `${wMin.toFixed(1)}%`);
         bar.style.setProperty("--w-max", `${wMax.toFixed(1)}%`);
         bar.style.animationDuration = `${o.animSeconds}s`;
-        bar.style.animationDelay = `-${delay}s`;       // negative → start mid-cycle
+        bar.style.animationDelay = `-${delay}s`;
         rail.appendChild(bar);
       }
     }
