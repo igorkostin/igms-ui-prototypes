@@ -1,9 +1,77 @@
-# Dot-ring hero animation — прототип
+# iGMS hero animations — прототипы
 
-Самописная замена эффекту движущихся зелёных точек на hero-секции
-[salesloft.com/platform/forecast/AI-forecast](https://www.salesloft.com/platform/forecast/AI-forecast).
-Цель — подключить аналогичный эффект на главную iGMS с возможностью настройки
-цвета и геометрии под бренд.
+Песочница с прототипами фоновых анимаций для нового hero iGMS-лендинга.
+Все самописные, генерятся в браузере, конфигурируются под бренд.
+
+| Прототип | URL (deployed) | Идея | Источник |
+|---|---|---|---|
+| **hub** | `/` | Список всех прототипов | — |
+| **dot-ring** | `/dot-ring/` | Кольцо/дуга из точек, вращается | salesloft.com/platform/forecast |
+| **hero01-copperx** | `/hero01-copperx/` | Поток горизонтальных волн на canvas | copperx.io/payment-links |
+| **hero02-castle** | `/hero02-castle/` | Мягкие пастельные блобы с drift'ом | castle.io/product/rules |
+
+Боевой URL: **http://design-prototype.airgms.com/** (DNS настраивается;
+пока через IP `54.245.205.132` с `Host:` заголовком).
+
+## Структура папок
+
+```
+igms-ui-animations/
+├── README.md
+├── deploy.sh             ← rsync на EC2, см. `./deploy.sh --help`
+├── .gitignore
+├── _import/              ← drop-zone для ассетов из Figma (не деплоится)
+├── .claude/              ← preview settings (не деплоится)
+└── prototypes/           ← это deploy root → /var/www/prototypes/
+    ├── index.html        ← hub
+    ├── shared/
+    │   ├── proto-nav.css
+    │   └── igms-main-multicalendar-screen.png
+    ├── dot-ring/
+    │   ├── index.html
+    │   ├── styles.css
+    │   └── dot-ring.js
+    ├── hero01-copperx/
+    │   ├── index.html
+    │   ├── styles.css
+    │   └── waves.js
+    └── hero02-castle/
+        ├── index.html
+        └── styles.css
+```
+
+Внутри каждого прототипа стандартные имена (`index.html`, `styles.css`,
+JS-модуль) → URL без расширений (`/<имя-прототипа>/`).
+
+## Деплой
+
+```bash
+./deploy.sh                       # запушить всё (с --delete)
+./deploy.sh --dry                 # сухой прогон, посмотреть diff
+./deploy.sh hero01-copperx        # только один прототип
+./deploy.sh hero01-copperx --dry
+```
+
+Используется dedicated SSH-ключ `~/.ssh/ec2_proto_deploy_ed25519` (deploy-only,
+без passphrase). Сервер: Amazon Linux 2023, nginx, autoindex on.
+
+## Локальный preview
+
+```bash
+python3 -m http.server 8765
+# → http://localhost:8765/prototypes/
+```
+
+Или через VSCode Live Server / любой статик-сервер.
+
+---
+
+Ниже — детальная техническая дока по каждому прототипу. Начинаем с dot-ring
+(исторически первый).
+
+---
+
+## Часть 1 — Dot-ring
 
 ---
 
@@ -376,3 +444,143 @@ CSS (брендовый цвет + позиционирование скопир
 5. Переход от 3-полосных пресетов horizon к **одному поясу с
    градиентом плотности** `(1 − t)^k`. Все точки непрозрачные, эффект
    halftone-печати. Пересмотрели все `horizon-*` пресеты.
+
+---
+
+## Часть 2 — hero01-copperx (волны)
+
+### Источник
+[copperx.io/payment-links](https://copperx.io/payment-links) — у них **MP4
+видео** (`/_next/static/media/banner.426883ec.mp4`) на фоне hero,
+автоплей+луп. Мы заменили на canvas-генерацию — легче, конфигурируемо,
+без видео-ассета.
+
+### Идея
+Flow-field из 30–60 тонких горизонтальных линий. Каждая линия — гладкая
+кривая с **двумя гармониками синуса** + слабая третья:
+
+```
+y(x, t) = baseY
+       + A · 0.70 · sin(x / λ₁ · 2π + φₐ + t)
+       + A · 0.28 · sin(x / λ₂ · 2π + φ_b + t·1.35)
+       + A · 0.08 · sin(x / λ₃ · 2π + φₐ·1.7 + t·0.6)
+```
+
+где `λ₁ = wavelength`, `λ₂ = λ₁·0.42`, `λ₃ = λ₁·0.18`. Композиция двух
+несвязных частот даёт «органичный» вид, который не выглядит как
+математический синус. Фаза каждой линии сдвинута относительно соседних
+(`φₐ = i·0.42 + sin(i·0.7)·0.5`) — линии не качаются синхронно, поэтому
+получается плетёное движение, а не стая параллельных копий.
+
+Цвет — HSL, hue растёт по линиям от `hueStart` до `hueStart + hueRange`.
+`mix-blend-mode: multiply` на canvas — слои не темнят друг друга, а
+смешиваются как краска.
+
+### Файлы
+- `hero01-copperx.html` — demo + панель контролов
+- `hero01-copperx.js` — класс `WaveField` + пресеты
+- `hero01-copperx.css` — стили hero + продукт-мок
+
+### API
+```js
+import { WaveField, WAVE_PRESETS } from "./hero01-copperx.js";
+const wave = new WaveField(canvasElement, WAVE_PRESETS.pastel);
+wave.start();
+wave.update({ amplitude: 100, hueStart: 200 });
+wave.stop();    // или wave.destroy();
+```
+
+Все опции — числовые (см. `DEFAULTS` в `hero01-copperx.js`):
+`lineCount, lineSpacing, amplitude, wavelength, speed, lineWidth,
+opacity, hueStart, hueRange, saturation, lightness`.
+
+### Пресеты
+- `pastel` — мягкие тёплые цвета, плотный поток
+- `calm` — узкая палитра, медленные волны
+- `aurora` — холодные сине-зелёные тона
+- `igms` — зелёно-жёлтый брендовый
+- `vivid` — широкая палитра, много линий, сильная амплитуда
+
+### Производительность
+~36 линий × ~110 сэмплов = ~4 000 line segments каждый кадр. На M1/M2 это
+50–60 fps без проблем. Если лагает на мобильном — уменьшить `lineCount`
+или поднять `lineSpacing`. `dpr` ограничен `min(devicePixelRatio, 2)` —
+чтобы не рендерить лишнее на retina.
+
+### `prefers-reduced-motion`
+Учитывается: при `reduce` анимация не запускается, рисуется один кадр.
+
+---
+
+## Часть 3 — hero02-castle (блобы)
+
+### Источник
+[castle.io/product/rules](https://castle.io/product/rules) — у них прямо
+в HTML видны 3 абсолютных дива 1024×1024 с tailwind-классами
+`bg-radial from-yellow-300/15 to-transparent`,
+`bg-radial from-cyan-300/30 ...`, `bg-radial from-purple-300/30 ...`.
+Статика, без анимации. Мы добавили медленный drift и breathing-scale,
+плюс конфигурируемые цвета через CSS-переменные.
+
+### Идея
+4 абсолютных дива, каждый — `border-radius: 50%` + radial-gradient +
+`filter: blur(40px)` + `mix-blend-mode: multiply`. Размер 70vw по
+умолчанию (огромные мягкие пятна). Анимация — `@keyframes drift-N`
+которая медленно сдвигает и слегка масштабирует блоб по сложной траектории
+30–48 секунд. У каждого блоба своя независимая фаза, поэтому общий
+рисунок «течёт» непрерывно.
+
+### Файлы
+- `hero02-castle.html` — demo + контролы (CSS-only анимация, JS только
+  для слайдеров)
+- `hero02-castle.css` — стили + keyframes
+
+### Настройки (CSS-переменные на `:root`)
+```css
+--blob-1: #FFE066;     /* цвет каждого из 4 блобов */
+--blob-2: #FF9EC7;
+--blob-3: #9EE9FF;
+--blob-4: #C7B6FF;
+--blob-size: 70vw;     /* диаметр */
+--blob-opacity: 0.5;
+--blob-blur: 40px;
+--blob-speed: 1;        /* множитель скорости — duration делится на это */
+--blob-blend: multiply; /* или screen/overlay/soft-light/normal */
+```
+
+### Пресеты
+- `pastel` — жёлтый/розовый/cyan/фиолетовый (как у Castle)
+- `warm` — оттенки песка/персик/розовый
+- `cool` — все холодные тона
+- `igms` — жёлтый + наш зелёный + cyan
+
+### Производительность
+Чистый CSS-композит. Бесплатно на GPU. 4 слоя с `filter: blur` — единственная
+нагрузка, но даже на слабых iPhone это 60fps.
+
+---
+
+## Сравнение прототипов
+
+| | dot-ring | copperx-waves | castle-blobs |
+|---|---|---|---|
+| **Технология** | Inline SVG + CSS rotate | Canvas 2D + rAF | CSS @keyframes |
+| **JS-runtime** | Только генерация (один раз) | requestAnimationFrame loop | Нет |
+| **Конфиг** | Программный (bands, falloff) | Программный (lineCount, hue…) | CSS-переменные |
+| **Бренд-цвет** | 1 CSS-переменная | HSL диапазон | 4 CSS-переменные |
+| **Размер DOM** | ~3 000–18 000 элементов | 1 canvas | 4 дива |
+| **Идеально для** | Графичный акцент, кольцо/дуга | Поточный/жидкий фон | Мягкий цветовой акцент |
+| **Сложность интеграции** | Низкая | Низкая | Очень низкая |
+
+---
+
+## Следующие шаги
+
+- [ ] Выбрать ОДИН прототип под новый iGMS hero. Текущий лидер по
+      «легкости» — castle (CSS-only, минимум кода). copperx интереснее
+      визуально. dot-ring — самый «нарративный».
+- [ ] Заменить mock-дашборд на реальный скриншот продукта.
+- [ ] Подбор финального цвета — на сейчас у каждого прототипа свои
+      дефолты, нужен единый брендовый.
+- [ ] Адаптация под мобильные.
+- [ ] Тёмная тема (если будет).

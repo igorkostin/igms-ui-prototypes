@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>iGMS hero animation prototypes</title>
+  <link rel="stylesheet" href="./shared/proto-nav.css" />
+  <style>
+    :root {
+      --text: #0a1f17;
+      --muted: #5b6b62;
+      --border: #e7eee9;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background: #fff;
+    }
+    main {
+      max-width: 980px;
+      margin: 100px auto 80px;
+      padding: 0 24px;
+    }
+    .intro {
+      margin-bottom: 56px;
+      max-width: 640px;
+    }
+    .intro h1 {
+      font-size: clamp(32px, 4vw, 44px);
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
+    .intro p {
+      font-size: 17px;
+      line-height: 1.5;
+      color: var(--muted);
+      margin: 0;
+    }
+    .proto-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .proto-list a {
+      display: block;
+      padding: 22px 22px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #fff;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .proto-list a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px -16px rgba(0,0,0,0.15);
+      border-color: #c8d4cc;
+    }
+    .proto-list h3 {
+      margin: 0 0 6px;
+      font-size: 17px;
+      letter-spacing: -0.01em;
+    }
+    .proto-list .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #f0f8f3;
+      color: #2a8c5a;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .proto-list p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    footer {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    footer code {
+      background: #f4faf6;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="proto-nav">
+    <a class="active" href="./">hub</a>
+    <a href="./dot-ring/">dot-ring</a>
+    <a href="./hero01-copperx/">copperx waves</a>
+    <a href="./hero02-castle/">castle blobs</a>
+  </nav>
+
+  <main>
+    <div class="intro">
+      <h1>iGMS hero animation prototypes</h1>
+      <p>Sandbox of background-animation experiments for the new iGMS landing hero. All effects generated in-browser (no video, no heavy assets), tunable, brand-themable.</p>
+    </div>
+
+    <ul class="proto-list">
+      <li>
+        <a href="./hero01-copperx/">
+          <span class="tag">canvas</span>
+          <h3>hero01 — copperx waves</h3>
+          <p>Flow-field of soft horizontal wave lines on canvas. Tunable density, hue range, speed. Inspired by copperx.io.</p>
+        </a>
+      </li>
+      <li>
+        <a href="./hero02-castle/">
+          <span class="tag">css</span>
+          <h3>hero02 — castle blobs</h3>
+          <p>Pastel radial-gradient blobs drifting in the background. Pure CSS animation. Inspired by castle.io.</p>
+        </a>
+      </li>
+      <li>
+        <a href="./dot-ring/">
+          <span class="tag">svg</span>
+          <h3>dot-ring — Salesloft-style</h3>
+          <p>Rotating ring / horizon arc of dots with density falloff. Inline SVG + CSS rotate. Inspired by salesloft.com.</p>
+        </a>
+      </li>
+    </ul>
+  </main>
+
+  <footer>
+    Source on GitHub: <code>igorkostin/igms-ui-prototypes</code>.
+    Deploy via <code>./deploy.sh</code> (rsync to <code>/var/www/prototypes/</code>).
+  </footer>
+</body>
+</html>

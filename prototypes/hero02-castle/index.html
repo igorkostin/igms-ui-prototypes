@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hero02-castle — soft color blobs (iGMS hero accent)</title>
+  <link rel="stylesheet" href="../shared/proto-nav.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <nav class="proto-nav">
+    <a href="../">hub</a>
+    <a href="../dot-ring/">dot-ring</a>
+    <a href="../hero01-copperx/">copperx waves</a>
+    <a class="active" href="./">castle blobs</a>
+  </nav>
+
+  <section class="hero">
+    <!-- Blobs: positioned absolutely behind everything. -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+
+    <div class="hero-inner">
+      <div class="badge">★★★★★ 1,300+ reviews</div>
+
+      <h1>Short-term rental software<br/>for hosts <span class="brand">growing beyond Airbnb</span></h1>
+
+      <p class="lede">
+        Connect Airbnb, VRBO, and Booking.com in one app. Easy to set up
+        and if you get stuck, a real person helps.
+      </p>
+
+      <div class="cta-row">
+        <button class="cta-primary">Start free trial</button>
+        <button class="cta-secondary">Book a demo</button>
+      </div>
+
+      <img
+        class="product-image"
+        src="../shared/igms-main-multicalendar-screen.png"
+        alt="iGMS multi-calendar dashboard"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  <aside class="controls">
+    <h3>Castle blobs — controls</h3>
+
+    <div class="grid">
+      <label>
+        Blob #1 color <span class="val" id="val-c1">#FFE066</span>
+        <input id="c1" type="color" value="#FFE066" />
+      </label>
+      <label>
+        Blob #2 color <span class="val" id="val-c2">#FF9EC7</span>
+        <input id="c2" type="color" value="#FF9EC7" />
+      </label>
+      <label>
+        Blob #3 color <span class="val" id="val-c3">#9EE9FF</span>
+        <input id="c3" type="color" value="#9EE9FF" />
+      </label>
+      <label>
+        Blob #4 color <span class="val" id="val-c4">#C7B6FF</span>
+        <input id="c4" type="color" value="#C7B6FF" />
+      </label>
+
+      <label>
+        Blob size <span class="val" id="val-size">70 vw</span>
+        <input id="size" type="range" min="30" max="120" step="2" value="70" />
+      </label>
+      <label>
+        Opacity <span class="val" id="val-opacity">0.5</span>
+        <input id="opacity" type="range" min="0.1" max="1" step="0.05" value="0.5" />
+      </label>
+      <label>
+        Blur <span class="val" id="val-blur">40 px</span>
+        <input id="blur" type="range" min="0" max="120" step="2" value="40" />
+      </label>
+      <label>
+        Animation speed <span class="val" id="val-speed">1.0×</span>
+        <input id="speed" type="range" min="0" max="3" step="0.1" value="1" />
+      </label>
+
+      <label>
+        Blend mode
+        <select id="blend">
+          <option value="multiply" selected>multiply</option>
+          <option value="screen">screen</option>
+          <option value="normal">normal</option>
+          <option value="overlay">overlay</option>
+          <option value="soft-light">soft-light</option>
+        </select>
+      </label>
+
+      <label>
+        Preset
+        <div class="preset-row">
+          <button data-preset="pastel" class="active">pastel</button>
+          <button data-preset="warm">warm</button>
+          <button data-preset="cool">cool</button>
+          <button data-preset="igms">iGMS</button>
+        </div>
+      </label>
+    </div>
+  </aside>
+
+  <script type="module">
+    const PRESETS = {
+      pastel: { c1: "#FFE066", c2: "#FF9EC7", c3: "#9EE9FF", c4: "#C7B6FF" },
+      warm:   { c1: "#FFD580", c2: "#FFB199", c3: "#FFC7E5", c4: "#FFE49C" },
+      cool:   { c1: "#B6E0FF", c2: "#9EE9FF", c3: "#C7B6FF", c4: "#A6F0D6" },
+      igms:   { c1: "#FFE066", c2: "#A6E5C1", c3: "#9EE9FF", c4: "#FFD580" },
+    };
+
+    const root = document.documentElement;
+    const $ = (id) => document.getElementById(id);
+
+    function setColor(idx, hex) {
+      root.style.setProperty(`--blob-${idx}`, hex);
+      $(`c${idx}`).value = hex;
+      $(`val-c${idx}`).textContent = hex.toUpperCase();
+    }
+
+    for (const i of [1, 2, 3, 4]) {
+      $(`c${i}`).addEventListener("input", (e) => setColor(i, e.target.value));
+    }
+
+    $("size").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--blob-size", `${v}vw`);
+      $("val-size").textContent = `${v} vw`;
+    });
+    $("opacity").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--blob-opacity", v);
+      $("val-opacity").textContent = v.toFixed(2);
+    });
+    $("blur").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--blob-blur", `${v}px`);
+      $("val-blur").textContent = `${v} px`;
+    });
+    $("speed").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--blob-speed", v);
+      $("val-speed").textContent = `${v.toFixed(1)}×`;
+    });
+    $("blend").addEventListener("change", (e) => {
+      root.style.setProperty("--blob-blend", e.target.value);
+    });
+
+    document.querySelectorAll("[data-preset]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-preset]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        const p = PRESETS[b.dataset.preset];
+        for (const i of [1, 2, 3, 4]) setColor(i, p[`c${i}`]);
+      });
+    });
+  </script>
+</body>
+</html>

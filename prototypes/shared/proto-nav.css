@@ -1,0 +1,30 @@
+/* Small floating nav between prototypes. Same file linked from all demos. */
+.proto-nav {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  padding: 6px;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.12);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.proto-nav a {
+  color: #5b6b62;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.proto-nav a:hover { color: #0a1f17; background: rgba(0, 0, 0, 0.04); }
+.proto-nav a.active { color: #fff; background: #0a1f17; }

@@ -16,7 +16,20 @@
       "Bash(git -C /Users/igor/Projects/igms-ui-animations status -s)",
       "Bash(git -C /Users/igor/Projects/igms-ui-animations diff -- .claude/settings.local.json)",
       "Bash(git -C /Users/igor/Projects/igms-ui-animations add README.md .claude/settings.local.json)",
-      "Bash(git -C /Users/igor/Projects/igms-ui-animations commit -m ' *)"
+      "Bash(git -C /Users/igor/Projects/igms-ui-animations commit -m ' *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\)\" \"https://copperx.io/payment-links\" -o /tmp/copperx.html)",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\)\" \"https://castle.io/product/rules/\" -o /tmp/castle.html)",
+      "Bash(wait)",
+      "Bash(grep -oiE 'canvas|three\\\\.js|wavify|svg width|<svg[^>]{0,200}|video|webgl|shader|wavy|pattern|spiral|noise|simplex|perlin' /tmp/copperx.html)",
+      "Bash(find /tmp /var/folders -type f \\\\\\( -name \"*.png\" -o -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.webp\" \\\\\\) -mmin -15 2>/dev/null | head -20)",
+      "Bash(find /tmp /var/folders /private/var/folders ~/Library/Caches -type f \\\\\\( -name \"*.png\" -o -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.webp\" \\\\\\) -mmin -5 2>/dev/null | head -30)",
+      "Bash(ssh -i ~/.ssh/ec2_proto_deploy_ed25519 -o BatchMode=yes deploy@54.245.205.132 ' *)",
+      "Bash(git mv *)",
+      "Bash(git add *)",
+      "Bash(chmod +x /Users/igor/Projects/igms-ui-animations/deploy.sh)",
+      "Bash(./deploy.sh --dry)",
+      "Bash(./deploy.sh)"
     ]
   }
 }

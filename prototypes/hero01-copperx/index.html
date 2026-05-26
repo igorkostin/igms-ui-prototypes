@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hero01-copperx — flowing wave field (iGMS hero accent)</title>
+  <link rel="stylesheet" href="../shared/proto-nav.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <nav class="proto-nav">
+    <a href="../">hub</a>
+    <a href="../dot-ring/">dot-ring</a>
+    <a class="active" href="./">copperx waves</a>
+    <a href="../hero02-castle/">castle blobs</a>
+  </nav>
+
+  <section class="hero">
+    <!-- Wave field canvas: fills the section, sits behind content. -->
+    <canvas id="wave-canvas" class="wave-canvas"></canvas>
+
+    <div class="hero-inner">
+      <div class="badge">★★★★★ 1,300+ reviews</div>
+
+      <h1>Short-term rental software<br/>for hosts <span class="brand">growing beyond Airbnb</span></h1>
+
+      <p class="lede">
+        Connect Airbnb, VRBO, and Booking.com in one app. Easy to set up
+        and if you get stuck, a real person helps.
+      </p>
+
+      <div class="cta-row">
+        <button class="cta-primary">Start free trial</button>
+        <button class="cta-secondary">Book a demo</button>
+      </div>
+
+      <img
+        class="product-image"
+        src="../shared/igms-main-multicalendar-screen.png"
+        alt="iGMS multi-calendar dashboard"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  <aside class="controls">
+    <h3>Copperx waves — controls</h3>
+    <div class="grid">
+      <label>
+        Line count <span class="val" id="val-count">36</span>
+        <input id="lineCount" type="range" min="6" max="120" step="2" value="36" />
+      </label>
+      <label>
+        Line spacing <span class="val" id="val-spacing">14 px</span>
+        <input id="lineSpacing" type="range" min="4" max="40" step="1" value="14" />
+      </label>
+      <label>
+        Amplitude <span class="val" id="val-amp">70 px</span>
+        <input id="amplitude" type="range" min="10" max="200" step="2" value="70" />
+      </label>
+      <label>
+        Wavelength <span class="val" id="val-wave">520 px</span>
+        <input id="wavelength" type="range" min="120" max="1200" step="10" value="520" />
+      </label>
+      <label>
+        Speed <span class="val" id="val-speed">1.0×</span>
+        <input id="speed" type="range" min="0" max="3" step="0.05" value="1" />
+      </label>
+      <label>
+        Line width <span class="val" id="val-lw">1.2 px</span>
+        <input id="lineWidth" type="range" min="0.5" max="4" step="0.1" value="1.2" />
+      </label>
+      <label>
+        Opacity <span class="val" id="val-op">0.35</span>
+        <input id="opacity" type="range" min="0.05" max="1" step="0.01" value="0.35" />
+      </label>
+      <label>
+        Hue start <span class="val" id="val-hs">30°</span>
+        <input id="hueStart" type="range" min="0" max="360" step="2" value="30" />
+      </label>
+      <label>
+        Hue range <span class="val" id="val-hr">80°</span>
+        <input id="hueRange" type="range" min="0" max="360" step="2" value="80" />
+      </label>
+      <label>
+        Saturation <span class="val" id="val-sat">75%</span>
+        <input id="saturation" type="range" min="0" max="100" step="1" value="75" />
+      </label>
+      <label>
+        Lightness <span class="val" id="val-li">72%</span>
+        <input id="lightness" type="range" min="20" max="95" step="1" value="72" />
+      </label>
+      <label>
+        Blend mode
+        <select id="blend">
+          <option value="normal">normal</option>
+          <option value="multiply" selected>multiply</option>
+          <option value="screen">screen</option>
+          <option value="soft-light">soft-light</option>
+          <option value="overlay">overlay</option>
+        </select>
+      </label>
+
+      <label class="span-all">
+        Preset
+        <div class="preset-row">
+          <button data-preset="pastel">pastel</button>
+          <button data-preset="calm">calm</button>
+          <button data-preset="aurora">aurora</button>
+          <button data-preset="igms" class="active">iGMS</button>
+          <button data-preset="vivid">vivid</button>
+        </div>
+      </label>
+    </div>
+  </aside>
+
+  <script type="module">
+    import { WaveField, WAVE_PRESETS } from "./waves.js";
+
+    const canvas = document.getElementById("wave-canvas");
+    const wave = new WaveField(canvas, WAVE_PRESETS.igms);
+    wave.start();
+
+    const $ = (id) => document.getElementById(id);
+    const root = document.documentElement;
+
+    const NUM_FIELDS = {
+      lineCount:   { id: "lineCount",   valId: "val-count",  fmt: (v) => `${v}` },
+      lineSpacing: { id: "lineSpacing", valId: "val-spacing", fmt: (v) => `${v} px` },
+      amplitude:   { id: "amplitude",   valId: "val-amp",    fmt: (v) => `${v} px` },
+      wavelength:  { id: "wavelength",  valId: "val-wave",   fmt: (v) => `${v} px` },
+      speed:       { id: "speed",       valId: "val-speed",  fmt: (v) => `${v.toFixed(1)}×` },
+      lineWidth:   { id: "lineWidth",   valId: "val-lw",     fmt: (v) => `${v.toFixed(1)} px` },
+      opacity:     { id: "opacity",     valId: "val-op",     fmt: (v) => v.toFixed(2) },
+      hueStart:    { id: "hueStart",    valId: "val-hs",     fmt: (v) => `${v}°` },
+      hueRange:    { id: "hueRange",    valId: "val-hr",     fmt: (v) => `${v}°` },
+      saturation:  { id: "saturation",  valId: "val-sat",    fmt: (v) => `${v}%` },
+      lightness:   { id: "lightness",   valId: "val-li",     fmt: (v) => `${v}%` },
+    };
+
+    for (const [key, meta] of Object.entries(NUM_FIELDS)) {
+      const input = $(meta.id);
+      input.addEventListener("input", (e) => {
+        const v = Number(e.target.value);
+        wave.update({ [key]: v });
+        $(meta.valId).textContent = meta.fmt(v);
+      });
+    }
+
+    $("blend").addEventListener("change", (e) => {
+      canvas.style.mixBlendMode = e.target.value;
+    });
+    // Default canvas blend mode matches the dropdown initial.
+    canvas.style.mixBlendMode = "multiply";
+
+    function applyPreset(name) {
+      const p = WAVE_PRESETS[name];
+      wave.update(p);
+      // Sync sliders + value labels to the preset.
+      for (const [key, meta] of Object.entries(NUM_FIELDS)) {
+        if (p[key] !== undefined) {
+          $(meta.id).value = p[key];
+          $(meta.valId).textContent = meta.fmt(p[key]);
+        }
+      }
+    }
+    document.querySelectorAll("[data-preset]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-preset]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        applyPreset(b.dataset.preset);
+      });
+    });
+
+    // Sync sliders + labels to the iGMS preset on first load.
+    applyPreset("igms");
+  </script>
+</body>
+</html>
