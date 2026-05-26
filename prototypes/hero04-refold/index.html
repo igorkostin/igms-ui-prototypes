@@ -56,24 +56,35 @@
     <h3>Refold rails — controls</h3>
     <div class="grid">
       <label>
-        Bar count <span class="val" id="val-count">28</span>
-        <input id="barCount" type="range" min="8" max="60" step="1" value="28" />
+        Bar count <span class="val" id="val-count">48</span>
+        <input id="barCount" type="range" min="12" max="120" step="1" value="48" />
       </label>
       <label>
-        Pulse duration <span class="val" id="val-anim">6.0 s</span>
-        <input id="animSeconds" type="range" min="1" max="20" step="0.2" value="6" />
+        Bar height <span class="val" id="val-bh">16 px</span>
+        <input id="barHeight" type="range" min="6" max="40" step="1" value="16" />
       </label>
       <label>
-        Stagger <span class="val" id="val-stag">0.25 s</span>
-        <input id="staggerSeconds" type="range" min="0" max="1" step="0.02" value="0.25" />
+        Min width <span class="val" id="val-mn">25 %</span>
+        <input id="minWidth" type="range" min="0" max="80" step="1" value="25" />
+      </label>
+      <label>
+        Max width <span class="val" id="val-mx">95 %</span>
+        <input id="maxWidth" type="range" min="30" max="100" step="1" value="95" />
+      </label>
+      <label>
+        Breathe duration <span class="val" id="val-anim">5.0 s</span>
+        <input id="animSeconds" type="range" min="1" max="15" step="0.2" value="5" />
+      </label>
+      <label>
+        Stagger <span class="val" id="val-stag">0.10 s</span>
+        <input id="staggerSeconds" type="range" min="0" max="0.6" step="0.01" value="0.10" />
       </label>
       <label>
         Palette
         <div class="preset-row" id="palette-row">
-          <button data-palette="iGMS" class="active">iGMS</button>
-          <button data-palette="warm">warm</button>
-          <button data-palette="cool">cool</button>
-          <button data-palette="rainbow">rainbow</button>
+          <button data-palette="iGMS" class="active">iGMS yellow→mint</button>
+          <button data-palette="warm-mono">yellow→peach</button>
+          <button data-palette="cool">cool (A/B)</button>
         </div>
       </label>
     </div>
@@ -88,21 +99,20 @@
 
     const $ = (id) => document.getElementById(id);
 
-    $("barCount").addEventListener("input", (e) => {
-      const v = Number(e.target.value);
-      rails.update({ barCount: v });
-      $("val-count").textContent = v;
-    });
-    $("animSeconds").addEventListener("input", (e) => {
-      const v = Number(e.target.value);
-      rails.update({ animSeconds: v });
-      $("val-anim").textContent = `${v.toFixed(1)} s`;
-    });
-    $("staggerSeconds").addEventListener("input", (e) => {
-      const v = Number(e.target.value);
-      rails.update({ staggerSeconds: v });
-      $("val-stag").textContent = `${v.toFixed(2)} s`;
-    });
+    const wireSlider = (id, key, valId, fmt) => {
+      $(id).addEventListener("input", (e) => {
+        const v = Number(e.target.value);
+        rails.update({ [key]: v });
+        $(valId).textContent = fmt(v);
+      });
+    };
+    wireSlider("barCount",       "barCount",       "val-count", (v) => `${v}`);
+    wireSlider("barHeight",      "barHeight",      "val-bh",    (v) => `${v} px`);
+    wireSlider("minWidth",       "minWidth",       "val-mn",    (v) => `${v} %`);
+    wireSlider("maxWidth",       "maxWidth",       "val-mx",    (v) => `${v} %`);
+    wireSlider("animSeconds",    "animSeconds",    "val-anim",  (v) => `${v.toFixed(1)} s`);
+    wireSlider("staggerSeconds", "staggerSeconds", "val-stag",  (v) => `${v.toFixed(2)} s`);
+
     document.querySelectorAll("[data-palette]").forEach((b) => {
       b.addEventListener("click", () => {
         document.querySelectorAll("[data-palette]").forEach((x) => x.classList.remove("active"));

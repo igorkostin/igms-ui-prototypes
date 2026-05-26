@@ -1,65 +1,80 @@
-/* hero04-refold — animated color-bar rails left + right of the hero.
- * Hero layout/typography comes from ../shared/hero-base.css.
- * This file: just the rails and their animation. */
+/* hero04-refold — refold-style color rails (rev 2).
+ *
+ * Two big rails at the page edges. Each rail is a TIGHT vertical stack of
+ * full-width bars (no gaps). Every bar shares the SAME 2-color gradient:
+ * brand (outer page edge) → accent (middle) → white (toward the center).
+ * What varies between bars is their *width* — and that width breathes
+ * back and forth with a per-bar phase offset. Inner silhouette ripples.
+ *
+ * Hero layout/typography lives in ../shared/hero-base.css. */
 
-/* Make room on both sides of the hero so the rails don't crowd the text. */
+/* Give the hero room for two ~46% rails plus a narrower content column. */
 .hero {
-  padding-left: 320px;
-  padding-right: 320px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 100px;
+  padding-bottom: 80px;
+}
+.hero-inner {
+  /* Content column sits between the two rails, narrower than default */
+  max-width: 880px;
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
 /* --- Rails -------------------------------------------------------------- */
 .rail {
   position: absolute;
-  top: 80px;
-  bottom: 80px;
-  width: 240px;
+  top: 0;
+  bottom: 0;
+  width: 46%;                /* big — much closer to refold's actual size */
+  z-index: 1;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
-  z-index: 1;
-  pointer-events: none;
-  /* --rail-dir is set per side from JS: 1 (left) or -1 (right).
-     Bars use it to flip the fade direction so the gradient always points
-     toward the page edge. */
+  gap: 0;                    /* no gaps between bars */
+  overflow: hidden;
 }
-.rail-left  { left:  0; }
-.rail-right { right: 0; transform: scaleX(-1); }   /* mirror right rail */
+.rail-left  { left: 0; }
+.rail-right {
+  right: 0;
+  transform: scaleX(-1);     /* mirror so bars come in from the right edge */
+}
 
 .bar {
-  height: 5px;
-  width: 100%;
-  border-radius: 3px;
+  width: var(--w-min, 50%);
+  height: var(--bar-h, 16px);
+  /* The single gradient used by every bar. Brand color holds for the first
+     ~35% (visible solid stripe), transitions to accent at 65%, then fades
+     to transparent at 100% — like refold's pattern. */
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    transparent 25%,
-    var(--c, #FFD729) 100%
+    var(--brand,  #FFD729)   0%,
+    var(--brand,  #FFD729)  35%,
+    var(--accent, #B6E5C3)  65%,
+    rgba(255, 255, 255, 0) 100%
   );
-  background-size: 220% 100%;
-  background-position: 0% 0%;
-  animation-name: bar-pulse;
+  /* The width breathes between --w-min and --w-max. */
+  animation-name: bar-breathe;
   animation-iteration-count: infinite;
+  animation-direction: alternate;
   animation-timing-function: ease-in-out;
-  /* duration & delay set inline from JS for staggered effect */
-  will-change: background-position;
+  will-change: width;
 }
 
-/* The pulse slides the bright part of the gradient across, then back. */
-@keyframes bar-pulse {
-  0%   { background-position: 100% 0%; }
-  50%  { background-position:   0% 0%; }
-  100% { background-position: 100% 0%; }
+@keyframes bar-breathe {
+  from { width: var(--w-min, 30%); }
+  to   { width: var(--w-max, 95%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bar { animation: none; background-position: 0% 0%; }
+  .bar { animation: none; width: var(--w-max, 70%); }
 }
 
-/* Hide rails entirely below desktop — too narrow there to be tasteful. */
+/* Hide rails entirely below desktop — they need real width to look right. */
 @media (max-width: 1100px) {
-  .hero { padding-left: 24px; padding-right: 24px; }
+  .hero-inner { padding-left: 24px; padding-right: 24px; }
   .rail { display: none; }
 }
 
@@ -97,6 +112,11 @@
   font-variant-numeric: tabular-nums;
 }
 .controls input[type="range"] { width: 100%; }
+.controls input[type="color"] {
+  width: 100%; height: 34px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 6px; padding: 2px;
+}
 .controls .preset-row { display: flex; gap: 6px; }
 .controls .preset-row button {
   flex: 1;
