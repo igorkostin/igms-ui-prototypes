@@ -58,5 +58,73 @@
       />
     </div>
   </section>
+
+  <aside class="controls">
+    <h3>Trunk mountains — controls</h3>
+    <div class="grid">
+      <label>
+        Vertical offset (top) <span class="val" id="val-top">0 px</span>
+        <input id="top" type="range" min="-400" max="900" step="5" value="0" />
+      </label>
+      <label>
+        Height <span class="val" id="val-height">720 px</span>
+        <input id="height" type="range" min="200" max="1400" step="10" value="720" />
+      </label>
+      <label>
+        Opacity <span class="val" id="val-opacity">0.85</span>
+        <input id="opacity" type="range" min="0" max="1" step="0.05" value="0.85" />
+      </label>
+      <div class="btn-row">
+        <button data-preset="default">default (top of hero)</button>
+        <button data-preset="below-text">below CTA</button>
+        <button data-preset="above-text">above title (peek)</button>
+        <button data-preset="under-image">under product image</button>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    const root = document.documentElement;
+    const $ = (id) => document.getElementById(id);
+
+    function set(varName, val, label, fmt) {
+      root.style.setProperty(varName, val);
+      if (label) $(label).textContent = fmt(val);
+    }
+
+    $("top").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--mountains-top", `${v}px`);
+      $("val-top").textContent = `${v} px`;
+    });
+    $("height").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--mountains-height", `${v}px`);
+      $("val-height").textContent = `${v} px`;
+    });
+    $("opacity").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--mountains-opacity", v);
+      $("val-opacity").textContent = v.toFixed(2);
+    });
+
+    // Quick presets for typical positions — useful for show-and-tell.
+    const PRESETS = {
+      "default":      { top:   0, height:  720, opacity: 0.85 },
+      "below-text":   { top: 320, height:  600, opacity: 0.75 },
+      "above-text":   { top:-120, height:  500, opacity: 0.70 },
+      "under-image":  { top: 580, height:  500, opacity: 0.65 },
+    };
+    function applyPreset(name) {
+      const p = PRESETS[name];
+      if (!p) return;
+      $("top").value = p.top;       $("top").dispatchEvent(new Event("input"));
+      $("height").value = p.height; $("height").dispatchEvent(new Event("input"));
+      $("opacity").value = p.opacity; $("opacity").dispatchEvent(new Event("input"));
+    }
+    document.querySelectorAll("[data-preset]").forEach((b) => {
+      b.addEventListener("click", () => applyPreset(b.dataset.preset));
+    });
+  </script>
 </body>
 </html>
