@@ -44,6 +44,7 @@ const DEFAULTS = {
   samples: 60,
   harmonics: 2,
   monoColor: null,
+  dpr: 1.5,    // cap on devicePixelRatio (1.0 for slow GPUs, 1.5 default)
 };
 
 export class WaveField {
@@ -62,9 +63,10 @@ export class WaveField {
   }
 
   _resize() {
-    // Cap DPR at 1.5 — on retina, 2x doubles pixel count which is the biggest
-    // single performance drag for canvas stroke ops. 1.5x is still crisp.
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    // Cap DPR per options.dpr — on retina, 2x doubles pixel count which is
+    // the single biggest drag for canvas stroke ops. 1.5x is crisp on most
+    // displays; 1.0x is the option for older laptops.
+    const dpr = Math.min(window.devicePixelRatio || 1, this.options.dpr || 1.5);
     const r = this.canvas.getBoundingClientRect();
     this.canvas.width = Math.max(1, Math.floor(r.width * dpr));
     this.canvas.height = Math.max(1, Math.floor(r.height * dpr));
@@ -136,6 +138,7 @@ export class WaveField {
       "monoColor",
     ];
     if (cacheKeys.some((k) => k in partial)) this._rebuildCache();
+    if ("dpr" in partial) this._resize();
     if ("fps" in partial && this.running) {
       this.stop();
       this.start();

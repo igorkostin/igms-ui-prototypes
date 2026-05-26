@@ -104,9 +104,17 @@
         Vertical offset <span class="val" id="val-oy">0 px</span>
         <input id="offsetY" type="range" min="-600" max="600" step="5" value="0" />
       </label>
+      <label class="span-all">
+        Performance tier <span class="val" id="val-tier">auto</span>
+        <div class="preset-row" id="tier-row">
+          <button data-tier="auto" class="active">auto-detect</button>
+          <button data-tier="low">low (10 fps, 1× DPR)</button>
+          <button data-tier="high">high (30 fps, 1.5× DPR)</button>
+        </div>
+      </label>
       <label>
         FPS cap <span class="val" id="val-fps">30</span>
-        <input id="fps" type="range" min="10" max="60" step="5" value="30" />
+        <input id="fps" type="range" min="5" max="60" step="1" value="30" />
       </label>
       <label>
         Samples (quality) <span class="val" id="val-sm">60</span>
@@ -155,8 +163,42 @@
   <script type="module">
     import { WaveField, WAVE_PRESETS } from "./waves.js";
 
+    /* --- Device performance tier ------------------------------------------
+     * Old laptop (≤1440px screen) → "low": fewer frames, no retina,
+     * fewer samples. Bigger displays → "high" (full quality). User can
+     * still override manually with the Tier buttons. */
+    function detectTier() {
+      const w = window.screen?.width || 0;
+      const cores = navigator.hardwareConcurrency || 4;
+      const mem = navigator.deviceMemory || 4;
+      // Treat as "low" if any signal points to a constrained machine
+      if (w <= 1440 || cores <= 4 || mem <= 4) return "low";
+      return "high";
+    }
+    const TIERS = {
+      auto: null,    // resolved at apply time
+      low:  { fps: 10, samples: 30, harmonics: 1, dpr: 1.0 },
+      high: { fps: 30, samples: 60, harmonics: 2, dpr: 1.5 },
+    };
+    const detectedTier = detectTier();
+    let activeTier = "auto";
+
+    function tierOverrides(name) {
+      const resolved = name === "auto" ? detectedTier : name;
+      return TIERS[resolved];
+    }
+    function tierLabel() {
+      const resolved = activeTier === "auto" ? detectedTier : activeTier;
+      const t = TIERS[resolved];
+      const screen = `${window.screen.width}×${window.screen.height}`;
+      const cores = navigator.hardwareConcurrency || "?";
+      return `auto → ${resolved}  (screen ${screen}, ${cores} cores)`;
+    }
+
     const canvas = document.getElementById("wave-canvas");
-    const wave = new WaveField(canvas, WAVE_PRESETS["igms-1"]);
+    // First boot: apply iGMS-1 with detected tier overrides
+    const initialPreset = { ...WAVE_PRESETS["igms-1"], ...tierOverrides("auto") };
+    const wave = new WaveField(canvas, initialPreset);
     wave.start();
 
     const $ = (id) => document.getElementById(id);
@@ -195,9 +237,9 @@
     canvas.style.mixBlendMode = "multiply";
 
     function applyPreset(name) {
-      const p = WAVE_PRESETS[name];
+      const p = { ...WAVE_PRESETS[name], ...tierOverrides(activeTier) };
       wave.update(p);
-      // Sync sliders + value labels to the preset.
+      // Sync sliders + value labels to the preset (post tier merge).
       for (const [key, meta] of Object.entries(NUM_FIELDS)) {
         if (p[key] !== undefined) {
           $(meta.id).value = p[key];
@@ -205,6 +247,20 @@
         }
       }
     }
+
+    // Tier buttons — re-apply the current preset with new tier overrides.
+    function setTier(name) {
+      activeTier = name;
+      document.querySelectorAll("[data-tier]").forEach((x) =>
+        x.classList.toggle("active", x.dataset.tier === name));
+      $("val-tier").textContent = name === "auto" ? tierLabel() : name;
+      // Re-apply whichever preset is currently active
+      const active = document.querySelector("[data-preset].active")?.dataset.preset || "igms-1";
+      applyPreset(active);
+    }
+    document.querySelectorAll("[data-tier]").forEach((b) => {
+      b.addEventListener("click", () => setTier(b.dataset.tier));
+    });
     document.querySelectorAll("[data-preset]").forEach((b) => {
       b.addEventListener("click", () => {
         document.querySelectorAll("[data-preset]").forEach((x) => x.classList.remove("active"));
@@ -244,6 +300,7 @@
     // Sync sliders + labels to the iGMS-1 preset on first load.
     applyPreset("igms-1");
     syncPerfUi();
+    $("val-tier").textContent = tierLabel();
   </script>
 </body>
 </html>
