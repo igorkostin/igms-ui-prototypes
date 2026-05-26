@@ -165,13 +165,15 @@ export const WAVE_PRESETS = {
     hueStart: 0, hueRange: 280, saturation: 80, lightness: 65, opacity: 0.28,
   },
   // iGMS — working baseline for the production hero.
-  // Tighter line spacing + medium wavelength + warm hue range (yellow→teal)
-  // gives a dense, calm "current" that reads as a soft texture, not lines.
-  // Tuned manually by Igor on 2026-05-26 (rev 2).
+  // Slower, slightly wider lines with a longer wavelength → reads as a calm
+  // warm current. Vertical offset pushes the visible band slightly below the
+  // CTA so it sits behind the product image area.
+  // Tuned manually by Igor on 2026-05-26 (rev 3 — preview-ready).
   igms: {
-    lineCount: 38, lineSpacing: 7, amplitude: 12, wavelength: 590,
-    speed: 1.9, lineWidth: 1.5, opacity: 0.26,
-    hueStart: 18, hueRange: 150, saturation: 54, lightness: 46,
+    lineCount: 38, lineSpacing: 11, amplitude: 18, wavelength: 930,
+    speed: 0.6, lineWidth: 1.1, opacity: 0.26,
+    hueStart: 30, hueRange: 150, saturation: 54, lightness: 54,
+    offsetY: 105,
   },
   // Aurora — narrower amplitude, cool hues, smoother.
   aurora: {
