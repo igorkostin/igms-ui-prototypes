@@ -1,0 +1,139 @@
+/* hero05-castle — subtle pastel wash backdrop (no animation).
+ *
+ * Mirrors the technique on castle.io/product/rules: three large radial
+ * gradients positioned so only their soft inner fade is visible. Sits over
+ * a very-light vertical gradient base (white at top → slight grey at
+ * bottom of section), so the page transitions cleanly into white floors. */
+
+:root {
+  /* base background — overridden from JS preset buttons */
+  --hero-bg: linear-gradient(180deg, #FFFFFF 0%, #F4F4F5 50vh, #EFEFEF 100%);
+
+  /* per-wash colors (rgba so opacity is part of the value) */
+  --wash-1: rgba(253, 224,  71, 0.15);   /* yellow-300/15 */
+  --wash-2: rgba(103, 232, 249, 0.30);   /* cyan-300/30 */
+  --wash-3: rgba(216, 180, 254, 0.30);   /* purple-300/30 */
+
+  --wash-size:   1024px;
+  --wash-offset: -512px;   /* = -wash-size / 2 → half-off the top edge */
+}
+
+.hero {
+  background: var(--hero-bg);
+  /* The washes need room; the hero base already has overflow:hidden so
+     anything pushed off the edge stays off. */
+}
+
+/* --- Washes ------------------------------------------------------------- */
+.wash {
+  position: absolute;
+  width: var(--wash-size);
+  height: var(--wash-size);
+  top: var(--wash-offset);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+}
+.wash-1 {
+  /* top-left center: 50% left, half off the top */
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, var(--wash-1) 0%, transparent 70%);
+}
+.wash-2 {
+  /* top-right corner */
+  right: 0;
+  background: radial-gradient(circle, var(--wash-2) 0%, transparent 70%);
+}
+.wash-3 {
+  /* mid, biased right */
+  right: 50%;
+  background: radial-gradient(circle, var(--wash-3) 0%, transparent 70%);
+}
+
+/* --- A blank-white "floor" so user sees the section transition ---------- */
+.below-floor {
+  background: #FFFFFF;
+  padding: 80px 24px;
+  display: flex;
+  justify-content: center;
+}
+.floor-inner {
+  max-width: 640px;
+  text-align: center;
+  color: var(--color-muted);
+}
+.floor-inner h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+.floor-inner p {
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* --- Controls panel ----------------------------------------------------- */
+.controls {
+  max-width: var(--hero-max-width);
+  margin: 0 auto 80px;
+  padding: 22px 26px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.08);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+.controls h3 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.controls .grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 22px;
+}
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-muted);
+}
+.controls label .val {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.controls input[type="color"] {
+  width: 100%; height: 34px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 6px; padding: 2px;
+}
+.controls input[type="range"] { width: 100%; }
+.controls .preset-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.controls .preset-row button {
+  flex: 1;
+  height: 30px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 6px;
+  background: var(--color-bg);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+.controls .preset-row button.active {
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-color: var(--color-text);
+}
+
+@media (max-width: 880px) {
+  .controls .grid { grid-template-columns: 1fr 1fr; }
+}

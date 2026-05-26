@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hero05-castle — soft wash (iGMS hero accent)</title>
+  <link rel="stylesheet" href="../shared/proto-nav.css" />
+  <link rel="stylesheet" href="../shared/design-tokens.css" />
+  <link rel="stylesheet" href="../shared/hero-base.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <nav class="proto-nav">
+    <a href="../">hub</a>
+    <a href="../dot-ring/">dot-ring</a>
+    <a href="../hero01-copperx/">copperx waves</a>
+    <a href="../hero02-castle/">castle blobs</a>
+    <a href="../hero03-trunk/">trunk mountains</a>
+    <a href="../hero04-refold/">refold rails</a>
+    <a class="active" href="./">castle wash</a>
+  </nav>
+
+  <section class="hero">
+    <!-- Three radial washes, positioned half-off-screen so we only ever see
+         the soft inner fade. Mirrors castle.io/product/rules. -->
+    <div class="wash wash-1"></div>
+    <div class="wash wash-2"></div>
+    <div class="wash wash-3"></div>
+
+    <div class="hero-inner">
+      <div class="rating">
+        <span class="rating-icons">★★★★★</span>
+        <span class="rating-text">1,300+ reviews</span>
+      </div>
+
+      <h1>Short-term rental software for hosts growing beyond <span class="brand">Airbnb</span></h1>
+
+      <p class="lede">
+        Connect Airbnb, VRBO, and Booking.com in one app. Easy to set up
+        and if you get stuck, a real person helps.
+      </p>
+
+      <div class="cta-row">
+        <button class="btn btn-primary">Start free trial</button>
+        <button class="btn btn-secondary">Book a demo</button>
+      </div>
+
+      <img
+        class="product-image"
+        src="../shared/igms-main-multicalendar-screen.png"
+        alt="iGMS multi-calendar dashboard"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  <!-- White floor below to demonstrate the hero/page transition. -->
+  <section class="below-floor">
+    <div class="floor-inner">
+      <h2>What comes next on the page is plain white</h2>
+      <p>The hero wash above is intentionally subtle so the page can transition cleanly to standard sections. No animation, no blur — just a soft tinted backdrop that softens the contrast against the product screenshot.</p>
+    </div>
+  </section>
+
+  <aside class="controls">
+    <h3>Castle wash — controls</h3>
+    <div class="grid">
+      <label>
+        Base background
+        <div class="preset-row">
+          <button data-base="white" class="active">pure white</button>
+          <button data-base="warm-grey">warm grey (default castle)</button>
+          <button data-base="cool-grey">cool grey</button>
+        </div>
+      </label>
+
+      <label>
+        Wash #1 (top-left)
+        <input id="c1" type="color" value="#FDE047" />
+        <span class="val" id="val-c1">#FDE047 / 15%</span>
+      </label>
+      <label>
+        Wash #2 (top-right)
+        <input id="c2" type="color" value="#67E8F9" />
+        <span class="val" id="val-c2">#67E8F9 / 30%</span>
+      </label>
+      <label>
+        Wash #3 (mid)
+        <input id="c3" type="color" value="#D8B4FE" />
+        <span class="val" id="val-c3">#D8B4FE / 30%</span>
+      </label>
+
+      <label>
+        Wash opacity scale <span class="val" id="val-op">1.0×</span>
+        <input id="opacityScale" type="range" min="0" max="2" step="0.05" value="1" />
+      </label>
+      <label>
+        Wash size <span class="val" id="val-size">1024 px</span>
+        <input id="size" type="range" min="500" max="1800" step="20" value="1024" />
+      </label>
+
+      <label>
+        Palette presets
+        <div class="preset-row" id="palette-row">
+          <button data-palette="castle" class="active">castle default</button>
+          <button data-palette="igms">iGMS brand</button>
+          <button data-palette="warm">warm</button>
+          <button data-palette="cool">cool</button>
+        </div>
+      </label>
+    </div>
+  </aside>
+
+  <script type="module">
+    const PALETTES = {
+      // Sampled directly from castle.io/product/rules
+      castle: { c1: "#FDE047", c2: "#67E8F9", c3: "#D8B4FE",
+                a1: 0.15,     a2: 0.30,     a3: 0.30 },
+      // iGMS brand: yellow brand inside, warm coral + cool blue around it
+      igms:   { c1: "#FFD729", c2: "#96C8FF", c3: "#FFB199",
+                a1: 0.20,     a2: 0.25,     a3: 0.18 },
+      warm:   { c1: "#FFD729", c2: "#FFC07A", c3: "#FFB6D8",
+                a1: 0.18,     a2: 0.22,     a3: 0.22 },
+      cool:   { c1: "#9EE9FF", c2: "#B6E5C3", c3: "#C7B6FF",
+                a1: 0.22,     a2: 0.22,     a3: 0.22 },
+    };
+
+    const BASES = {
+      "white":     "linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)",
+      "warm-grey": "linear-gradient(180deg, #FFFFFF 0%, #F4F4F5 50vh, #EFEFEF 100%)",
+      "cool-grey": "linear-gradient(180deg, #FFFFFF 0%, #F4F6F8 50vh, #EDEFF2 100%)",
+    };
+
+    const root = document.documentElement;
+    const $ = (id) => document.getElementById(id);
+
+    function hexToRgb(hex) {
+      const v = hex.replace("#", "");
+      return [parseInt(v.slice(0,2),16), parseInt(v.slice(2,4),16), parseInt(v.slice(4,6),16)];
+    }
+    function setWashColor(idx, hex, alpha) {
+      const [r, g, b] = hexToRgb(hex);
+      root.style.setProperty(`--wash-${idx}`, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+      $(`c${idx}`).value = hex;
+      $(`val-c${idx}`).textContent = `${hex.toUpperCase()} / ${Math.round(alpha*100)}%`;
+    }
+
+    // Track current alphas separately so the slider can scale them.
+    let currentAlphas = { 1: 0.15, 2: 0.30, 3: 0.30 };
+    let opacityScale = 1.0;
+
+    function applyAlphaScale() {
+      for (const i of [1,2,3]) {
+        const a = Math.min(1, currentAlphas[i] * opacityScale);
+        const hex = $(`c${i}`).value;
+        setWashColor(i, hex, a);
+      }
+    }
+
+    function applyPalette(name) {
+      const p = PALETTES[name];
+      if (!p) return;
+      currentAlphas = { 1: p.a1, 2: p.a2, 3: p.a3 };
+      setWashColor(1, p.c1, p.a1 * opacityScale);
+      setWashColor(2, p.c2, p.a2 * opacityScale);
+      setWashColor(3, p.c3, p.a3 * opacityScale);
+      document.querySelectorAll("[data-palette]").forEach((x) =>
+        x.classList.toggle("active", x.dataset.palette === name));
+    }
+
+    // Color pickers — update both color and re-apply current alpha
+    for (const i of [1,2,3]) {
+      $(`c${i}`).addEventListener("input", (e) => {
+        setWashColor(i, e.target.value, currentAlphas[i] * opacityScale);
+      });
+    }
+
+    $("opacityScale").addEventListener("input", (e) => {
+      opacityScale = Number(e.target.value);
+      $("val-op").textContent = `${opacityScale.toFixed(2)}×`;
+      applyAlphaScale();
+    });
+
+    $("size").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      root.style.setProperty("--wash-size", `${v}px`);
+      root.style.setProperty("--wash-offset", `-${v/2}px`);   // half-off-screen
+      $("val-size").textContent = `${v} px`;
+    });
+
+    document.querySelectorAll("[data-base]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-base]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        root.style.setProperty("--hero-bg", BASES[b.dataset.base]);
+      });
+    });
+
+    document.querySelectorAll("[data-palette]").forEach((b) => {
+      b.addEventListener("click", () => applyPalette(b.dataset.palette));
+    });
+
+    // First paint
+    applyPalette("castle");
+  </script>
+</body>
+</html>
