@@ -3,15 +3,17 @@
  * This file: the radial-gradient blobs + the controls panel. */
 
 :root {
-  /* Blob defaults — overridden live from the controls panel via JS. */
+  /* iGMS-1 defaults — Igor's tuned baseline (saved 2026-05-26).
+     Brand yellow + soft mint/cyan, larger blobs with heavier blur and
+     a faster drift for a livelier feel. */
   --blob-1: #FFE066;
-  --blob-2: #FF9EC7;
+  --blob-2: #A6E5C1;
   --blob-3: #9EE9FF;
-  --blob-4: #C7B6FF;
-  --blob-size:    70vw;
-  --blob-opacity: 0.5;
-  --blob-blur:    40px;
-  --blob-speed:   1;
+  --blob-4: #FFD580;
+  --blob-size:    66vw;
+  --blob-opacity: 0.30;
+  --blob-blur:    52px;
+  --blob-speed:   2.6;
   --blob-blend:   multiply;
 }
 
