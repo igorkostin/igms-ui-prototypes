@@ -163,13 +163,14 @@ export const WAVE_PRESETS = {
     lineCount: 60, lineSpacing: 10, amplitude: 100, wavelength: 380,
     hueStart: 0, hueRange: 280, saturation: 80, lightness: 65, opacity: 0.28,
   },
-  // iGMS — selected as the working baseline for the production hero.
-  // Very low amplitude + long wavelength + wide hue range → calm rainbow
-  // ripple under text. Tuned manually by Igor on 2026-05-26.
+  // iGMS — working baseline for the production hero.
+  // Tighter line spacing + medium wavelength + warm hue range (yellow→teal)
+  // gives a dense, calm "current" that reads as a soft texture, not lines.
+  // Tuned manually by Igor on 2026-05-26 (rev 2).
   igms: {
-    lineCount: 46, lineSpacing: 12, amplitude: 12, wavelength: 1110,
-    speed: 1.3, lineWidth: 1.7, opacity: 0.22,
-    hueStart: 36, hueRange: 282, saturation: 68, lightness: 62,
+    lineCount: 38, lineSpacing: 7, amplitude: 12, wavelength: 590,
+    speed: 1.9, lineWidth: 1.5, opacity: 0.26,
+    hueStart: 18, hueRange: 150, saturation: 54, lightness: 46,
   },
   // Aurora — narrower amplitude, cool hues, smoother.
   aurora: {
