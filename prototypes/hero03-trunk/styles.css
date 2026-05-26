@@ -8,9 +8,11 @@
  * variables so the demo controls panel can tweak them live. */
 
 :root {
-  --mountains-top:     0px;
-  --mountains-height:  720px;
-  --mountains-opacity: 0.85;
+  /* iGMS-1 default — Igor's preferred placement, mountains as
+     a soft horizon divider between CTA and product image. */
+  --mountains-top:     150px;
+  --mountains-height:  810px;
+  --mountains-opacity: 0.50;
 }
 
 .mountains {
@@ -41,10 +43,8 @@
               transparent 100%);
 }
 
-/* On wider viewports, push the mountains a touch higher so the band sits
-   above the rating pill and behind the H1 cleanly. */
+/* Object-position fine-tune for wider viewports — keeps the crest visible. */
 @media (min-width: 1280px) {
-  :root { --mountains-height: 820px; }
   .mountains { object-position: center 20%; }
 }
 
