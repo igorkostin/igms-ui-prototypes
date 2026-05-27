@@ -244,23 +244,18 @@ export class CleanerScene {
         if (!isWrap) {
           guestVisits.push({ unit, name: nextChain, fromMin: arrivalMin, toMin: nextCheckoutMin });
         } else {
-          // Wraparound visit: arrival happens late on the last day,
-          // checkout happens at start of "day 0" of NEXT cycle. We model
-          // this as TWO visits in the timeline (so the guest is visible
-          // both at end of cycle and start of next):
-          //   - end-of-cycle: [arrivalMin .. totalMin)
-          //   - start-of-cycle: [0 .. checkoutMin of day 0)
-          const checkoutOnDay0 = 0 * DAY_SPAN_MIN + (usedCheckouts[0] * 60 - DAY_START_MIN);
+          // Wraparound: chain[0]'s arrival happens late on the last day
+          // AND chain[0] is "already in the unit" when the cycle loops
+          // back to day 0. Model as two visits:
+          //   - end-of-cycle:   [arrivalMin .. totalMin)   — slide-in anim
+          //   - start-of-cycle: [null     .. day0 checkout) — already present,
+          //                     no slide-in (otherwise we'd see a phantom
+          //                     duplicate next to the stationary one).
+          const checkoutOnDay0 = (usedCheckouts[0] * 60 - DAY_START_MIN);
           guestVisits.push({ unit, name: nextChain, fromMin: arrivalMin, toMin: this.totalMin });
-          guestVisits.push({ unit, name: nextChain, fromMin: 0, toMin: checkoutOnDay0, isWrapStart: true });
+          guestVisits.push({ unit, name: nextChain, fromMin: null, toMin: checkoutOnDay0, isWrapStart: true });
         }
       }
-
-      // Day-0 starting guest: chain[0] is present from the start of the cycle
-      // (== still inside the unit from "previous" cycle's last arrival),
-      // through their checkout time.
-      const day0Checkout = 0 * DAY_SPAN_MIN + (usedCheckouts[0] * 60 - DAY_START_MIN);
-      guestVisits.push({ unit, name: chain[0], fromMin: null, toMin: day0Checkout });
     }
 
     // 4) Assign cleaning jobs to cleaners (round-robin by cleanStart order)
@@ -383,10 +378,19 @@ export class CleanerScene {
       for (let i = 0; i < s.tasks.length; i++) {
         const t = s.tasks[i];
         const dest = this.properties[t.unit];
-        const from = (i === 0) ? s.enterFrom : this.properties[s.tasks[i - 1].unit];
-        t.travelStart = t.cleanStart - travelMin;
+        const prev = (i === 0) ? null : s.tasks[i - 1];
+        const from = (i === 0) ? s.enterFrom : this.properties[prev.unit];
+        // Travel always lasts up to `travelMin` minutes, but never starts
+        // before the previous task's cleanEnd (otherwise the worker would
+        // teleport mid-clean). If the gap to the previous task is smaller
+        // than travelMin, the travel just lasts the whole gap. If larger,
+        // the worker idles at prev.unit until travelStart.
+        t.travelStart = (i === 0)
+          ? t.cleanStart - travelMin
+          : Math.max(prev.cleanEnd, t.cleanStart - travelMin);
         t.travelFrom = from;
         t.travelCtrl = bezierCtrl(from, dest, this.rand);
+        t.prevUnit = (i === 0) ? null : prev.unit;   // remembered for idle render
       }
       const lastUnit = this.properties[s.tasks[s.tasks.length - 1].unit];
       s.exitTo = nearestEdgePoint(lastUnit, this.w, this.h);
@@ -511,10 +515,9 @@ export class CleanerScene {
   }
 
   _updateWorkers(minute) {
-    const TRAVEL_MIN = this.options.travelMin;
-
     for (const w of this.workers) {
-      // Find the active session (if any)
+      // Find the active session (if any). A session covers from the first
+      // task's travelStart through the post-last-task exit window.
       const session = w.sessions.find((s) =>
         minute >= s.tasks[0].travelStart && minute < s.exitEnd
       );
@@ -524,38 +527,15 @@ export class CleanerScene {
         continue;
       }
 
-      // Find current task within session
-      let cur = null, prev = null;
-      for (const t of session.tasks) {
-        if (minute < t.travelStart) break;
-        if (minute < t.cleanEnd) { cur = t; break; }
-        prev = t;
+      // Find the first task that hasn't finished yet
+      let curIdx = -1;
+      for (let i = 0; i < session.tasks.length; i++) {
+        if (minute < session.tasks[i].cleanEnd) { curIdx = i; break; }
       }
 
-      if (cur) {
-        const dest = this.properties[cur.unit];
-        if (minute < cur.cleanStart) {
-          // Traveling toward cur
-          const t = (minute - cur.travelStart) / (cur.cleanStart - cur.travelStart);
-          const p = quad(cur.travelFrom, cur.travelCtrl, dest, easeInOutCubic(t));
-          w.dom.g.setAttribute("transform", `translate(${p.x}, ${p.y})`);
-          w.dom.g.setAttribute("opacity", "1");
-          w.dom.ring.setAttribute("stroke-dasharray", `0 ${w.ringC}`);
-          w.dom.line.setAttribute("d",
-            `M ${cur.travelFrom.x} ${cur.travelFrom.y} Q ${cur.travelCtrl.x} ${cur.travelCtrl.y} ${dest.x} ${dest.y}`);
-          const op = t < 0.15 ? t/0.15 : t > 0.85 ? (1-t)/0.15 : 1;
-          w.dom.line.setAttribute("opacity", String(op * 0.55));
-        } else {
-          // Cleaning at cur
-          w.dom.g.setAttribute("transform", `translate(${dest.x}, ${dest.y})`);
-          w.dom.g.setAttribute("opacity", "1");
-          w.dom.line.setAttribute("opacity", "0");
-          const prog = (minute - cur.cleanStart) / (cur.cleanEnd - cur.cleanStart);
-          w.dom.ring.setAttribute("stroke-dasharray", `${prog * w.ringC} ${w.ringC}`);
-        }
-      } else if (minute >= session.exitStart && minute < session.exitEnd) {
-        // Exiting from session (after last task)
-        const t = (minute - session.exitStart) / (session.exitEnd - session.exitStart);
+      if (curIdx === -1) {
+        // All tasks done — render exit animation
+        const t = clamp((minute - session.exitStart) / (session.exitEnd - session.exitStart), 0, 1);
         const lastUnit = this.properties[session.tasks[session.tasks.length - 1].unit];
         const p = quad(lastUnit, session.exitCtrl, session.exitTo, easeInOutCubic(t));
         w.dom.g.setAttribute("transform", `translate(${p.x}, ${p.y})`);
@@ -564,9 +544,37 @@ export class CleanerScene {
           `M ${lastUnit.x} ${lastUnit.y} Q ${session.exitCtrl.x} ${session.exitCtrl.y} ${session.exitTo.x} ${session.exitTo.y}`);
         w.dom.line.setAttribute("opacity", String((1 - t) * 0.45));
         w.dom.ring.setAttribute("stroke-dasharray", `0 ${w.ringC}`);
-      } else {
-        w.dom.g.setAttribute("opacity", "0");
+        continue;
+      }
+
+      const cur = session.tasks[curIdx];
+      const dest = this.properties[cur.unit];
+
+      if (minute < cur.travelStart) {
+        // Idle between tasks — sit at PREVIOUS unit, no ring, no line
+        const prevUnit = this.properties[cur.prevUnit];
+        w.dom.g.setAttribute("transform", `translate(${prevUnit.x}, ${prevUnit.y})`);
+        w.dom.g.setAttribute("opacity", "1");
+        w.dom.ring.setAttribute("stroke-dasharray", `0 ${w.ringC}`);
         w.dom.line.setAttribute("opacity", "0");
+      } else if (minute < cur.cleanStart) {
+        // Traveling toward cur
+        const t = (minute - cur.travelStart) / (cur.cleanStart - cur.travelStart);
+        const p = quad(cur.travelFrom, cur.travelCtrl, dest, easeInOutCubic(t));
+        w.dom.g.setAttribute("transform", `translate(${p.x}, ${p.y})`);
+        w.dom.g.setAttribute("opacity", "1");
+        w.dom.ring.setAttribute("stroke-dasharray", `0 ${w.ringC}`);
+        w.dom.line.setAttribute("d",
+          `M ${cur.travelFrom.x} ${cur.travelFrom.y} Q ${cur.travelCtrl.x} ${cur.travelCtrl.y} ${dest.x} ${dest.y}`);
+        const op = t < 0.15 ? t/0.15 : t > 0.85 ? (1-t)/0.15 : 1;
+        w.dom.line.setAttribute("opacity", String(op * 0.55));
+      } else {
+        // Cleaning at cur
+        w.dom.g.setAttribute("transform", `translate(${dest.x}, ${dest.y})`);
+        w.dom.g.setAttribute("opacity", "1");
+        w.dom.line.setAttribute("opacity", "0");
+        const prog = (minute - cur.cleanStart) / (cur.cleanEnd - cur.cleanStart);
+        w.dom.ring.setAttribute("stroke-dasharray", `${prog * w.ringC} ${w.ringC}`);
       }
     }
   }
@@ -613,6 +621,7 @@ function pickN(source, n, rand) {
   return out;
 }
 function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 function easeOutCubic(t)   { const u = 1 - t; return 1 - u*u*u; }
 function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
 
