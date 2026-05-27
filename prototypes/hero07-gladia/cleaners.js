@@ -224,23 +224,29 @@ export class CleanerScene {
     this._g.properties.innerHTML = "";
     const { propertyCount, propertyRadius } = this.options;
 
-    // Bands tuned to clear the central content column on a 1440-design width
-    // but spread out to the edges on bigger displays. signedDx is anchored
-    // to center so properties stay relative on resize — they just drift
-    // off-screen on smaller windows, which is intentional (the scene is
-    // CSS-hidden below 900px anyway).
-    const SAFE_HALF = 460;    // ≥ H1 wrap half (425) + breathing room
-    const SIDE_MAX  = 1100;   // far enough out to reach the edges of a 2560 screen
+    // Placement bands are computed from the CURRENT viewport so all dots
+    // sit inside the visible area with a 50px safe-zone from each edge.
+    // After placement, signedDx is stored on each property and is anchored
+    // to the central axis — so window resize after load just translates
+    // existing dots (some may drift off-screen if the window shrinks; user
+    // accepts this until next refresh).
+    const EDGE_PAD = 50;
+    const REQUESTED_SAFE = 460;   // ideal central-text safe zone (≥ H1 half)
+    const innerLimit = this.w / 2 - EDGE_PAD;
+    const SIDE_MAX = innerLimit;
+    // If the viewport is too narrow to honor REQUESTED_SAFE plus a placement
+    // band, clamp SAFE_HALF down — properties will overlap central text a
+    // bit on small screens (better than going off-screen at refresh).
+    const SAFE_HALF = Math.min(REQUESTED_SAFE, Math.max(140, innerLimit - 80));
     const TOP_PAD   = 70;
-    const VERT_SPAN = 420;    // a touch more vertical breathing room
+    const VERT_SPAN = 420;
 
     this.properties = [];
     let attempts = 0;
     while (this.properties.length < propertyCount && attempts < propertyCount * 60) {
       attempts++;
       const side = this.rand() > 0.5 ? 1 : -1;
-      // sqrt biases the random t toward 1 → more properties land further
-      // from center, where the eye reads them as a frame, not a cluster.
+      // sqrt biases t toward 1 → more dots near the outer edge of the band
       const t = Math.sqrt(this.rand());
       const signedDx = side * (SAFE_HALF + t * (SIDE_MAX - SAFE_HALF));
       const dy = TOP_PAD + this.rand() * VERT_SPAN;
@@ -248,8 +254,8 @@ export class CleanerScene {
         Math.abs(p.signedDx - signedDx) < 90 && Math.abs(p.dy - dy) < 55)) continue;
       this.properties.push({
         idx: this.properties.length,
-        signedDx, dy,                              // stable, resize-proof
-        x: this.w / 2 + signedDx, y: dy,            // derived from above
+        signedDx, dy,                              // stable; survives resize
+        x: this.w / 2 + signedDx, y: dy,            // derived screen coords
         name: PROPERTY_NAMES[this.properties.length % PROPERTY_NAMES.length],
       });
     }
