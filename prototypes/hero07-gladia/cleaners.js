@@ -224,20 +224,28 @@ export class CleanerScene {
     this._g.properties.innerHTML = "";
     const { propertyCount, propertyRadius } = this.options;
 
-    const SAFE_HALF = 320;   // central content column — keep dots outside
-    const SIDE_MAX  = 720;   // max horizontal offset from center
+    // Bands tuned to clear the central content column on a 1440-design width
+    // but spread out to the edges on bigger displays. signedDx is anchored
+    // to center so properties stay relative on resize — they just drift
+    // off-screen on smaller windows, which is intentional (the scene is
+    // CSS-hidden below 900px anyway).
+    const SAFE_HALF = 460;    // ≥ H1 wrap half (425) + breathing room
+    const SIDE_MAX  = 1100;   // far enough out to reach the edges of a 2560 screen
     const TOP_PAD   = 70;
-    const VERT_SPAN = 380;   // how tall the band of properties is
+    const VERT_SPAN = 420;    // a touch more vertical breathing room
 
     this.properties = [];
     let attempts = 0;
     while (this.properties.length < propertyCount && attempts < propertyCount * 60) {
       attempts++;
       const side = this.rand() > 0.5 ? 1 : -1;
-      const signedDx = side * (SAFE_HALF + this.rand() * (SIDE_MAX - SAFE_HALF));
+      // sqrt biases the random t toward 1 → more properties land further
+      // from center, where the eye reads them as a frame, not a cluster.
+      const t = Math.sqrt(this.rand());
+      const signedDx = side * (SAFE_HALF + t * (SIDE_MAX - SAFE_HALF));
       const dy = TOP_PAD + this.rand() * VERT_SPAN;
       if (this.properties.some((p) =>
-        Math.abs(p.signedDx - signedDx) < 80 && Math.abs(p.dy - dy) < 55)) continue;
+        Math.abs(p.signedDx - signedDx) < 90 && Math.abs(p.dy - dy) < 55)) continue;
       this.properties.push({
         idx: this.properties.length,
         signedDx, dy,                              // stable, resize-proof
