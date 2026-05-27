@@ -54,32 +54,50 @@
   </section>
 
   <aside class="controls">
-    <h3>Gladia cleaners — controls</h3>
+    <h3>Hotel day — controls</h3>
+    <p style="margin:0 0 14px; color: var(--color-muted); font-size: 12.5px;">
+      9:00am → 11:00pm of a host's day compressed into the demo loop. Green dots
+      are guests, brand-color dots are cleaners, dark amber is the PM. Cleaning
+      starts only after the guest leaves; new guests arrive only after the unit
+      is clean. Cleaner assignments don't overlap.
+    </p>
     <div class="grid">
       <label>
+        Properties <span class="val" id="val-props">9</span>
+        <input id="propertyCount" type="range" min="6" max="14" step="1" value="9" />
+      </label>
+      <label>
         Cleaners <span class="val" id="val-cleaners">2</span>
-        <input id="cleanerCount" type="range" min="1" max="5" step="1" value="2" />
+        <input id="cleanerCount" type="range" min="1" max="4" step="1" value="2" />
       </label>
       <label>
-        Properties on map <span class="val" id="val-props">9</span>
-        <input id="propertyCount" type="range" min="4" max="14" step="1" value="9" />
+        PMs <span class="val" id="val-pms">1</span>
+        <input id="pmCount" type="range" min="0" max="2" step="1" value="1" />
       </label>
       <label>
-        Stops per route <span class="val" id="val-stops">3–5</span>
-        <input id="routeStops" type="range" min="2" max="8" step="1" value="4" />
+        Initial occupancy <span class="val" id="val-occ">70%</span>
+        <input id="occupancyAtStart" type="range" min="0.2" max="1.0" step="0.05" value="0.70" />
       </label>
       <label>
-        Cleaning time <span class="val" id="val-clean">4.5 s</span>
-        <input id="cleaningMs" type="range" min="1500" max="10000" step="100" value="4500" />
+        Long-stay guests <span class="val" id="val-long">2</span>
+        <input id="longStayCount" type="range" min="0" max="4" step="1" value="2" />
       </label>
       <label>
-        Travel time <span class="val" id="val-move">1.8 s</span>
-        <input id="movingMs" type="range" min="600" max="5000" step="50" value="1800" />
+        Day length <span class="val" id="val-day">60 s</span>
+        <input id="dayMs" type="range" min="20000" max="180000" step="5000" value="60000" />
       </label>
       <label>
         FPS cap <span class="val" id="val-fps">30</span>
         <input id="fps" type="range" min="10" max="60" step="5" value="30" />
       </label>
+      <label>
+        Playback
+        <div class="preset-row">
+          <button id="pause" type="button">⏸ pause</button>
+          <button id="reshuffle" type="button">↻ new day</button>
+        </div>
+      </label>
+
       <label class="span-all">
         Background tint
         <div class="preset-row" id="bg-row">
@@ -88,9 +106,6 @@
           <button data-bg="white">pure white</button>
           <button data-bg="dark">dark plum</button>
         </div>
-      </label>
-      <label class="span-all">
-        <button id="reshuffle" style="height:34px; border:1px solid var(--color-border-soft); border-radius:6px; background:#FFF; cursor:pointer; font-weight:500;">↻ Reshuffle layout</button>
       </label>
     </div>
   </aside>
@@ -119,18 +134,13 @@
         $(valId).textContent = fmt(v);
       });
     }
-    bindRange("cleanerCount",  "cleanerCount",  "val-cleaners", (v) => `${v}`);
-    bindRange("propertyCount", "propertyCount", "val-props",    (v) => `${v}`);
-    bindRange("cleaningMs",    "cleaningMs",    "val-clean",    (v) => `${(v/1000).toFixed(1)} s`);
-    bindRange("movingMs",      "movingMs",      "val-move",     (v) => `${(v/1000).toFixed(1)} s`);
-    bindRange("fps",           "fps",           "val-fps",      (v) => `${v}`);
-
-    // Stops slider: same value drives both min and max for simplicity.
-    $("routeStops").addEventListener("input", (e) => {
-      const v = Number(e.target.value);
-      scene.update({ routeMinStops: Math.max(2, v - 1), routeMaxStops: v + 1 });
-      $("val-stops").textContent = `${Math.max(2, v - 1)}–${v + 1}`;
-    });
+    bindRange("propertyCount",    "propertyCount",    "val-props",     (v) => `${v}`);
+    bindRange("cleanerCount",     "cleanerCount",     "val-cleaners",  (v) => `${v}`);
+    bindRange("pmCount",          "pmCount",          "val-pms",       (v) => `${v}`);
+    bindRange("occupancyAtStart", "occupancyAtStart", "val-occ",       (v) => `${Math.round(v*100)}%`);
+    bindRange("longStayCount",    "longStayCount",    "val-long",      (v) => `${v}`);
+    bindRange("dayMs",            "dayMs",            "val-day",       (v) => `${(v/1000).toFixed(0)} s`);
+    bindRange("fps",              "fps",              "val-fps",       (v) => `${v}`);
 
     document.querySelectorAll("[data-bg]").forEach((b) => {
       b.addEventListener("click", () => {
@@ -143,8 +153,13 @@
       });
     });
 
-    $("reshuffle").addEventListener("click", () => {
-      scene.update({ seed: Math.floor(Math.random() * 1e6) });
+    $("reshuffle").addEventListener("click", () => scene.reshuffle());
+
+    let paused = false;
+    $("pause").addEventListener("click", () => {
+      paused = !paused;
+      scene.update({ paused });
+      $("pause").textContent = paused ? "▶ play" : "⏸ pause";
     });
   </script>
 </body>
