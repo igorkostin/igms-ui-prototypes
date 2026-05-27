@@ -93,7 +93,11 @@ export class CleanerScene {
     this.options = { ...DEFAULT_OPTIONS, ...options };
     this.running = false;
     this._mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    this._onResize = () => this._layout();
+    // Debounced resize that preserves simulated time
+    this._onResize = () => {
+      clearTimeout(this._resizeTimer);
+      this._resizeTimer = setTimeout(() => this._layout({ preserveTime: true }), 150);
+    };
     window.addEventListener("resize", this._onResize);
     this._build();
   }
@@ -107,19 +111,37 @@ export class CleanerScene {
       workers:    mk(this.svg, "g", { "data-layer": "workers" }),
       clock:      mk(this.svg, "g", { "data-layer": "clock" }),
     };
-    this._layout();
+    this._layout({ preserveTime: false });
   }
 
-  _layout() {
+  /** Re-build properties / schedule / DOM entities.
+   *  preserveTime: keep the current simulated minute (used on resize so the
+   *  animation continues from where it was — not restart from 9:00am). */
+  _layout({ preserveTime = false } = {}) {
+    const carryMinute = (preserveTime && this.totalMin !== undefined)
+      ? this._minutesFor(performance.now())
+      : null;
+
     const r = this.svg.getBoundingClientRect();
     this.w = Math.max(800, r.width);
     this.h = Math.max(500, r.height);
     this.svg.setAttribute("viewBox", `0 0 ${this.w} ${this.h}`);
     this.rand = mulberry32(this.options.seed);
-    this._cycleStartT = performance.now();
     this._placeProperties();
     this._planCycle();
     this._renderClock();
+
+    if (carryMinute !== null) {
+      // Anchor the clock so the current minute is preserved across the rebuild
+      const cycleMs = this.options.dayMs * this.options.dayCount;
+      this._cycleStartT = performance.now() - (carryMinute / this.totalMin) * cycleMs;
+    } else {
+      this._cycleStartT = performance.now();
+    }
+
+    // Paint immediately so we don't show a frame of opacity:0 before
+    // the next rAF tick (especially noticeable mid-resize).
+    if (this.workers && this.guests) this._tick(performance.now());
   }
 
   // ---------- properties ----------
