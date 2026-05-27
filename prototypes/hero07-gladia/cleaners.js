@@ -93,6 +93,13 @@ export class CleanerScene {
     this.options = { ...DEFAULT_OPTIONS, ...options };
     this.running = false;
     this._mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    // Below this width the scene is hidden by CSS — we also pause the rAF
+    // loop so we don't burn CPU on something nobody can see.
+    this._mqSmall = window.matchMedia("(max-width: 900px)");
+    this._mqSmall.addEventListener("change", (e) => {
+      if (e.matches) this._pauseForSmallViewport();
+      else this._resumeForSmallViewport();
+    });
     // Debounced resize that preserves simulated time
     this._onResize = () => {
       clearTimeout(this._resizeTimer);
@@ -100,6 +107,18 @@ export class CleanerScene {
     };
     window.addEventListener("resize", this._onResize);
     this._build();
+  }
+
+  _pauseForSmallViewport() {
+    this._hiddenBySmall = true;
+    if (this.running) { this.stop(); this._wasRunningBeforeSmall = true; }
+  }
+  _resumeForSmallViewport() {
+    this._hiddenBySmall = false;
+    if (this._wasRunningBeforeSmall) {
+      this._wasRunningBeforeSmall = false;
+      this.start();
+    }
   }
 
   _build() {
@@ -145,25 +164,33 @@ export class CleanerScene {
   }
 
   // ---------- properties ----------
+  // Each property has a STABLE position anchored to the central vertical
+  // axis (signedDx: left or right of center) and to the top of the hero
+  // (dy: pixels from top). On resize, only the X gets recomputed
+  // (centerX + signedDx) — the property stays "pinned" relative to where
+  // it sat before. Layout doesn't reshuffle.
   _placeProperties() {
     this._g.properties.innerHTML = "";
     const { propertyCount, propertyRadius } = this.options;
 
-    const cx = this.w / 2;
-    const safeWidthHalf = Math.min(560, this.w * 0.35);
-    const topPad    = 70;
-    const bottomPad = Math.min(420, this.h * 0.55);
+    const SAFE_HALF = 320;   // central content column — keep dots outside
+    const SIDE_MAX  = 720;   // max horizontal offset from center
+    const TOP_PAD   = 70;
+    const VERT_SPAN = 380;   // how tall the band of properties is
 
     this.properties = [];
     let attempts = 0;
-    while (this.properties.length < propertyCount && attempts < propertyCount * 50) {
+    while (this.properties.length < propertyCount && attempts < propertyCount * 60) {
       attempts++;
-      const x = this.rand() * (this.w - 80) + 40;
-      const y = this.rand() * (this.h - topPad - bottomPad) + topPad;
-      if (Math.abs(x - cx) < safeWidthHalf && y > 80 && y < this.h - bottomPad + 40) continue;
-      if (this.properties.some((p) => Math.hypot(p.x - x, p.y - y) < 90)) continue;
+      const side = this.rand() > 0.5 ? 1 : -1;
+      const signedDx = side * (SAFE_HALF + this.rand() * (SIDE_MAX - SAFE_HALF));
+      const dy = TOP_PAD + this.rand() * VERT_SPAN;
+      if (this.properties.some((p) =>
+        Math.abs(p.signedDx - signedDx) < 80 && Math.abs(p.dy - dy) < 55)) continue;
       this.properties.push({
-        idx: this.properties.length, x, y,
+        idx: this.properties.length,
+        signedDx, dy,                              // stable, resize-proof
+        x: this.w / 2 + signedDx, y: dy,            // derived from above
         name: PROPERTY_NAMES[this.properties.length % PROPERTY_NAMES.length],
       });
     }
@@ -438,6 +465,10 @@ export class CleanerScene {
   start() {
     if (this.running) return;
     if (this._mq.matches) { this._drawStatic(); return; }
+    if (this._mqSmall.matches) {
+      this._wasRunningBeforeSmall = true;  // resume when viewport grows
+      return;
+    }
     this.running = true;
     const targetFrameMs = 1000 / Math.max(1, this.options.fps);
     let lastFrameT = 0;

@@ -44,6 +44,12 @@
   display: block;
 }
 
+/* Hide the whole scene on small screens — names + paths + dots get
+   messy and overlap the hero text. The hero still works without it. */
+@media (max-width: 900px) {
+  .scene { display: none; }
+}
+
 /* "Live" badge top-center, exactly like gladia */
 .live-badge {
   position: absolute;
