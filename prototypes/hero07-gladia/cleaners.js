@@ -52,7 +52,7 @@ const COLORS = {
 };
 
 const DEFAULT_OPTIONS = {
-  propertyCount:    9,
+  propertyCount:    7,
   cleanerCount:     2,
   pmCount:          1,
   longStayCount:    2,
