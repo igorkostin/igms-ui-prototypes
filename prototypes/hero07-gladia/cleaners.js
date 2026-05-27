@@ -55,10 +55,14 @@ const DEFAULT_OPTIONS = {
   propertyCount:    9,
   cleanerCount:     2,
   pmCount:          1,
-  occupancyAtStart: 0.70,
   longStayCount:    2,
-  dayCount:         3,      // multi-day cycle length
-  dayMs:           60000,   // ONE day = 60s, so 3 days = 180s by default
+  dayCount:         7,      // multi-day cycle length
+  dayMs:           15000,   // ONE day = 15s, so 7 days ≈ 105s by default
+  /** Per-day occupancy target (% of total units occupied at NIGHT). The
+   *  planner builds a per-night occupancy matrix to hit these column sums
+   *  exactly (clamped to feasible range). Wraps seamlessly: D7-end == D1-start
+   *  occupancy state, by construction. */
+  targetOccupancy: [60, 100, 90, 75, 70, 80, 58],
   fps:             30,
   seed:             1,
   paused:           false,
@@ -269,106 +273,141 @@ export class CleanerScene {
   }
 
   // ---------- cycle planner ----------
+  // Drives night-occupancy from `options.targetOccupancy[d]` (one % per
+  // day). Algorithm:
+  //   1) Pick longStayCount units to be occupied EVERY night (they count
+  //      toward every day's target).
+  //   2) For each night d, compute target cycling-occupancy = roundedTarget
+  //      − longStay. Pick that many random cycling units to be ON at night d.
+  //   3) For each cycling unit, scan its 7-bit occupancy row and extract
+  //      maximal runs of ON nights → those are guest "stays". Wrap-merge
+  //      if the row's first and last nights are both ON.
+  //   4) Each stay → guest visit (with optional split for wrap stays) +
+  //      one cleaning job scheduled after the stay's checkout.
+  // This guarantees end-of-day occupancy matches the targets exactly, and
+  // by construction the cycle wraps seamlessly (state at totalMin == state
+  // at 0).
   _planCycle() {
     const o = this.options;
     const N = this.properties.length;
     const days = o.dayCount;
     this.totalMin = days * DAY_SPAN_MIN;
 
-    // 1) Pick which units start the cycle occupied. Long-stay subset stays
-    //    occupied through the entire cycle.
-    const occupiedCount = Math.round(N * o.occupancyAtStart);
-    const allIdxs = [...Array(N).keys()];
-    shuffle(allIdxs, this.rand);
-    const occupied = allIdxs.slice(0, occupiedCount);
-    const longStayUnits = occupied.slice(0, Math.min(o.longStayCount, occupied.length));
-    const cyclingUnits  = occupied.slice(longStayUnits.length);
+    // Per-day target headcount (clamped to feasible)
+    const headTargets = [];
+    for (let d = 0; d < days; d++) {
+      const pct = o.targetOccupancy[d % o.targetOccupancy.length] ?? 70;
+      headTargets.push(Math.max(0, Math.min(N, Math.round(N * pct / 100))));
+    }
 
-    // 2) Build a name pool. Each long-stay unit gets one name (fixed).
-    //    Each cycling unit gets ONE name per day, forming a chain of
-    //    `days` guests. The chain wraps: day N's arrival == day 0's
-    //    starting guest, so the boundary is seamless.
+    // 1) Long-stay units occupy ALL nights → count toward every target
+    const allIdxs = shuffle([...Array(N).keys()], this.rand);
+    const longStayCount = Math.min(o.longStayCount, Math.min(...headTargets));
+    const longStayUnits = allIdxs.slice(0, longStayCount);
+    const cyclingUnits  = allIdxs.slice(longStayCount);
+    const cyclingN      = cyclingUnits.length;
+
+    // Per-night target cycling-occupancy
+    const cycTargets = headTargets.map((t) => Math.max(0, Math.min(cyclingN, t - longStayCount)));
+
+    // 2) Occupancy matrix [cyclingUnit][night] — each column has exactly
+    //    `cycTargets[d]` true values.
+    const matrix = Array.from({ length: cyclingN }, () => new Array(days).fill(false));
+    for (let d = 0; d < days; d++) {
+      const pool = shuffle([...Array(cyclingN).keys()], this.rand);
+      for (let i = 0; i < cycTargets[d]; i++) matrix[pool[i]][d] = true;
+    }
+
+    // Name pool
     const namePool = shuffle([...GUEST_NAMES], this.rand);
 
-    /** @type {Array<{unit:number,name:string}>} */
-    const longStayPlan = longStayUnits.map((u) => ({ unit: u, name: namePool.pop() || "Guest" }));
-
-    /** @type {Map<number, string[]>}  unit → [guest day0, guest day1, ..., guest day-{N-1}] */
-    const chains = new Map();
-    for (const u of cyclingUnits) {
-      const chain = [];
-      for (let d = 0; d < days; d++) chain.push(namePool.pop() || `Guest ${d}`);
-      chains.set(u, chain);
-    }
-
-    // 3) Build per-day per-unit jobs (checkout, clean, pm, arrival).
-    //    Cleaning jobs go into a flat list to be assigned to cleaners.
-    /** @type {Array<{unit,cleanStart,cleanEnd,pmStart,pmEnd,dayIdx}>} */
+    // ---- collect events ----
     const cleanJobs = [];
-    /** @type {Array<{unit,name,fromMin,toMin}>}  guest visits (intervals) */
     const guestVisits = [];
 
-    // Long-stay guests are present the entire cycle.
-    for (const ls of longStayPlan) {
-      guestVisits.push({ unit: ls.unit, name: ls.name, fromMin: null, toMin: null });
+    // Long-stay guests (present always)
+    for (const u of longStayUnits) {
+      guestVisits.push({ unit: u, name: namePool.pop() || "Guest", fromMin: null, toMin: null });
     }
 
-    for (const [unit, chain] of chains) {
-      // Each day d:
-      //   - chain[d] is in the unit from previous day's arrival (or start) until day d's checkout
-      //   - new arrival of chain[(d+1) % days] happens later that day
-      // For the loop boundary: chain[days] = chain[0], so at end of cycle the
-      // unit is occupied by chain[0] again.
-      const usedCheckouts = pickN(CHECKOUT_TIMES_DEFAULT, days, this.rand);
-      const usedArrivals  = pickN(ARRIVAL_TIMES_DEFAULT, days, this.rand);
+    // 3) For each cycling unit, derive stays from its row.
+    for (let cu = 0; cu < cyclingN; cu++) {
+      const unitIdx = cyclingUnits[cu];
+      const row = matrix[cu];
 
-      for (let d = 0; d < days; d++) {
-        const checkoutMin = d * DAY_SPAN_MIN + (usedCheckouts[d] * 60 - DAY_START_MIN);
-        const cleanStart  = checkoutMin + o.cleanGap;
-        const cleanEnd    = cleanStart + o.cleanDuration;
-        // PM check on alternating days (cuts visual noise)
-        const wantPm = (d % 2 === 0) && this.rand() < 0.65;
+      // Find segments (maximal runs of true). Segment = [startNight, endNight] inclusive.
+      const segments = [];
+      let i = 0;
+      while (i < days) {
+        if (row[i]) {
+          const start = i;
+          while (i < days && row[i]) i++;
+          segments.push([start, i - 1]);
+        } else {
+          i++;
+        }
+      }
+
+      // Wrap-merge: if first night & last night both ON in distinct segments,
+      // they describe one stay spanning the cycle boundary.
+      let wrapMerged = false;
+      if (segments.length >= 2 && segments[0][0] === 0 && segments[segments.length - 1][1] === days - 1) {
+        const last = segments.pop();
+        segments[0] = [last[0], days + segments[0][1]];   // end ≥ days means wraps
+        wrapMerged = true;
+      }
+      // Single segment covering all nights: treat as a non-checkout guest
+      // (essentially a 7-night-stay across the wrap with no checkout in this cycle).
+      const fullCovered = segments.length === 1 && segments[0][0] === 0 && segments[0][1] === days - 1;
+
+      // Pick distinct random hours per stay
+      for (const seg of segments) {
+        const startNight = seg[0];
+        const endNightRaw = seg[1];
+        const guestName = namePool.pop() || "Guest";
+
+        if (fullCovered) {
+          // Always-on cycling unit — emulate a long-stay for this cycle
+          guestVisits.push({ unit: unitIdx, name: guestName, fromMin: null, toMin: null });
+          break;
+        }
+
+        // A stay needs split-rendering whenever it crosses the cycle boundary
+        // — either because wrap-merge extended endNightRaw past `days`, OR
+        // because the natural checkout day (endNight+1) wraps to 0.
+        const mergedWrap = endNightRaw >= days;
+        const endNight = mergedWrap ? (endNightRaw - days) : endNightRaw;
+        const checkoutCrossesBoundary = (endNight + 1) >= days;
+        const needsSplit = mergedWrap || checkoutCrossesBoundary;
+
+        const arrHour = ARRIVAL_TIMES_DEFAULT[Math.floor(this.rand() * ARRIVAL_TIMES_DEFAULT.length)];
+        const coHour  = CHECKOUT_TIMES_DEFAULT[Math.floor(this.rand() * CHECKOUT_TIMES_DEFAULT.length)];
+
+        const arrivalMin  = startNight * DAY_SPAN_MIN + (arrHour * 60 - DAY_START_MIN);
+        const checkoutMin = ((endNight + 1) % days) * DAY_SPAN_MIN + (coHour * 60 - DAY_START_MIN);
+
+        if (needsSplit) {
+          // Visible from arrivalMin to end of cycle (slide-in anim), then
+          // present-from-start-of-next-cycle until checkoutMin (no anim).
+          guestVisits.push({ unit: unitIdx, name: guestName, fromMin: arrivalMin, toMin: this.totalMin });
+          guestVisits.push({ unit: unitIdx, name: guestName, fromMin: null, toMin: checkoutMin });
+        } else {
+          guestVisits.push({ unit: unitIdx, name: guestName, fromMin: arrivalMin, toMin: checkoutMin });
+        }
+
+        // Cleaning is scheduled AFTER the checkout from this stay.
+        // For wrap stays, the checkout lands in the next cycle's first morning
+        // → in cycle-time that's "minute checkoutMin" of the current cycle
+        // (small number, near 0). PM gets a chance after.
+        const cleanStart = checkoutMin + o.cleanGap;
+        const cleanEnd   = cleanStart + o.cleanDuration;
+        const wantPm = this.rand() < 0.35;
         const pmStart = wantPm ? cleanEnd + o.pmDelay : null;
         const pmEnd   = wantPm ? pmStart + o.pmDuration : null;
-
-        const arrivalRaw = d * DAY_SPAN_MIN + (usedArrivals[d] * 60 - DAY_START_MIN);
-        const earliestArrival = (pmEnd ?? cleanEnd) + o.guestArriveBuf;
-        const arrivalMin = Math.max(arrivalRaw, earliestArrival);
-
-        // Guest visit: chain[d] is "in unit" from arrival of previous day's
-        // chain[(d-1+days)%days] to this day's checkout.
-        // For d=0: from start of cycle (== arrival at end of previous cycle
-        // from chain[days-1]'s slot — modular). Easier modelling:
-        //   visit i: name = chain[i], from = arrivalMin of day i-1 (or null if i==0)
-        //                                to = checkoutMin of day i.
-        // We loop: visit's "from" for day 0 is null (== start of cycle).
-        // The arrival event at day {days-1} → chain[0] effectively becomes
-        // visible only when we wrap to day 0 next iteration; render-side
-        // handles this with a separate "appearing at cycle start" entry.
-
-        cleanJobs.push({ unit, cleanStart, cleanEnd, pmStart, pmEnd, dayIdx: d });
-
-        // The arrival of chain[(d+1) % days] is a guest visit starting at arrivalMin
-        // and ending at next day's checkout (or wrapping for the last d).
-        const nextChain = chain[(d + 1) % days];
-        // toMin: when next-day's checkout happens for this unit; if d == days-1 wraps to day 0.
-        const nextCheckoutMin = ((d + 1) % days) * DAY_SPAN_MIN +
-                                (usedCheckouts[(d + 1) % days] * 60 - DAY_START_MIN);
-        const isWrap = (d + 1) >= days;
-        if (!isWrap) {
-          guestVisits.push({ unit, name: nextChain, fromMin: arrivalMin, toMin: nextCheckoutMin });
-        } else {
-          // Wraparound: chain[0]'s arrival happens late on the last day
-          // AND chain[0] is "already in the unit" when the cycle loops
-          // back to day 0. Model as two visits:
-          //   - end-of-cycle:   [arrivalMin .. totalMin)   — slide-in anim
-          //   - start-of-cycle: [null     .. day0 checkout) — already present,
-          //                     no slide-in (otherwise we'd see a phantom
-          //                     duplicate next to the stationary one).
-          const checkoutOnDay0 = (usedCheckouts[0] * 60 - DAY_START_MIN);
-          guestVisits.push({ unit, name: nextChain, fromMin: arrivalMin, toMin: this.totalMin });
-          guestVisits.push({ unit, name: nextChain, fromMin: null, toMin: checkoutOnDay0, isWrapStart: true });
-        }
+        cleanJobs.push({
+          unit: unitIdx, cleanStart, cleanEnd, pmStart, pmEnd,
+          dayIdx: Math.floor(cleanStart / DAY_SPAN_MIN),
+        });
       }
     }
 
@@ -516,7 +555,7 @@ export class CleanerScene {
     return { role, idx, name, color, tasks, sessions, dom: { g, ring, line }, ringC: C };
   }
 
-  // ---------- clock ----------
+  // ---------- clock + occupancy ----------
   _renderClock() {
     this._g.clock.innerHTML = "";
     this._clockText = mk(this._g.clock, "text", {
@@ -524,6 +563,26 @@ export class CleanerScene {
       "font-size": 12, "font-weight": 500, "letter-spacing": "0.04em",
       "font-family": "var(--font-body, Outfit, sans-serif)", fill: COLORS.clockText,
     }, "");
+    this._occText = mk(this._g.clock, "text", {
+      x: 20, y: 46,
+      "font-size": 11, "font-weight": 400, "letter-spacing": "0.04em",
+      "font-family": "var(--font-body, Outfit, sans-serif)", fill: COLORS.clockText,
+    }, "");
+  }
+
+  _updateOccupancy(minute) {
+    // Count unique units that currently have a present guest
+    const occupied = new Set();
+    for (const g of this.guests) {
+      const startedBefore = g.fromMin === null || minute >= g.fromMin;
+      const endsAfter     = g.toMin   === null || minute <  g.toMin;
+      if (startedBefore && endsAfter) occupied.add(g.unit);
+    }
+    const pct = this.properties.length === 0
+      ? 0
+      : Math.round(occupied.size / this.properties.length * 100);
+    this._occText.textContent =
+      `Occupancy: ${pct}%  (${occupied.size}/${this.properties.length})`;
   }
 
   // ---------- runtime ----------
@@ -583,6 +642,7 @@ export class CleanerScene {
     this._updateClock(minute);
     this._updateGuests(minute);
     this._updateWorkers(minute);
+    this._updateOccupancy(minute);
   }
 
   _updateClock(minute) {
@@ -700,8 +760,8 @@ export class CleanerScene {
   update(partial) {
     this.options = { ...this.options, ...partial };
     const rebuildKeys = [
-      "propertyCount", "cleanerCount", "pmCount", "occupancyAtStart",
-      "longStayCount", "dayCount", "seed",
+      "propertyCount", "cleanerCount", "pmCount",
+      "longStayCount", "dayCount", "seed", "targetOccupancy",
     ];
     if (rebuildKeys.some((k) => k in partial)) {
       this._layout();

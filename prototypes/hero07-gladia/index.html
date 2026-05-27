@@ -78,20 +78,16 @@
         <input id="pmCount" type="range" min="0" max="2" step="1" value="1" />
       </label>
       <label>
-        Initial occupancy <span class="val" id="val-occ">70%</span>
-        <input id="occupancyAtStart" type="range" min="0.2" max="1.0" step="0.05" value="0.70" />
-      </label>
-      <label>
         Long-stay guests <span class="val" id="val-long">2</span>
         <input id="longStayCount" type="range" min="0" max="4" step="1" value="2" />
       </label>
       <label>
-        Days in cycle <span class="val" id="val-days">3</span>
-        <input id="dayCount" type="range" min="1" max="5" step="1" value="3" />
+        Days in cycle <span class="val" id="val-days">7</span>
+        <input id="dayCount" type="range" min="2" max="14" step="1" value="7" />
       </label>
       <label>
-        Day length <span class="val" id="val-day">60 s</span>
-        <input id="dayMs" type="range" min="20000" max="180000" step="5000" value="60000" />
+        Day length <span class="val" id="val-day">15 s</span>
+        <input id="dayMs" type="range" min="5000" max="60000" step="1000" value="15000" />
       </label>
       <label>
         FPS cap <span class="val" id="val-fps">30</span>
@@ -144,7 +140,6 @@
     bindRange("propertyCount",    "propertyCount",    "val-props",     (v) => `${v}`);
     bindRange("cleanerCount",     "cleanerCount",     "val-cleaners",  (v) => `${v}`);
     bindRange("pmCount",          "pmCount",          "val-pms",       (v) => `${v}`);
-    bindRange("occupancyAtStart", "occupancyAtStart", "val-occ",       (v) => `${Math.round(v*100)}%`);
     bindRange("longStayCount",    "longStayCount",    "val-long",      (v) => `${v}`);
     bindRange("dayCount",         "dayCount",         "val-days",      (v) => `${v}`);
     bindRange("dayMs",            "dayMs",            "val-day",       (v) => `${(v/1000).toFixed(0)} s`);
