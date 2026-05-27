@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hero07-gladia — cleaner routing scene (iGMS hero accent)</title>
+  <link rel="stylesheet" href="../shared/proto-nav.css" />
+  <link rel="stylesheet" href="../shared/design-tokens.css" />
+  <link rel="stylesheet" href="../shared/hero-base.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <nav class="proto-nav">
+    <a href="../">hub</a>
+    <a href="../dot-ring/">dot-ring</a>
+    <a href="../hero01-copperx/">copperx waves</a>
+    <a href="../hero02-castle/">castle blobs</a>
+    <a href="../hero03-trunk/">trunk mountains</a>
+    <a href="../hero05-castle/">castle wash</a>
+    <a href="../hero06-glean/">glean mesh</a>
+    <a class="active" href="./">gladia cleaners</a>
+  </nav>
+
+  <section class="hero">
+    <svg id="scene" class="scene" aria-hidden="true"></svg>
+
+    <div class="hero-inner">
+      <div class="rating">
+        <span class="rating-icons">★★★★★</span>
+        <span class="rating-text">1,300+ reviews</span>
+      </div>
+
+      <h1>Short-term rental software for hosts growing beyond <span class="brand">Airbnb</span></h1>
+
+      <p class="lede">
+        Connect Airbnb, VRBO, and Booking.com in one app. Easy to set up
+        and if you get stuck, a real person helps.
+      </p>
+
+      <div class="cta-row">
+        <button class="btn btn-primary">Start free trial</button>
+        <button class="btn btn-secondary">Book a demo</button>
+      </div>
+
+      <img
+        class="product-image"
+        src="../shared/igms-main-multicalendar-screen.png"
+        alt="iGMS multi-calendar dashboard"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  <aside class="controls">
+    <h3>Gladia cleaners — controls</h3>
+    <div class="grid">
+      <label>
+        Cleaners <span class="val" id="val-cleaners">2</span>
+        <input id="cleanerCount" type="range" min="1" max="5" step="1" value="2" />
+      </label>
+      <label>
+        Properties on map <span class="val" id="val-props">9</span>
+        <input id="propertyCount" type="range" min="4" max="14" step="1" value="9" />
+      </label>
+      <label>
+        Stops per route <span class="val" id="val-stops">3–5</span>
+        <input id="routeStops" type="range" min="2" max="8" step="1" value="4" />
+      </label>
+      <label>
+        Cleaning time <span class="val" id="val-clean">4.5 s</span>
+        <input id="cleaningMs" type="range" min="1500" max="10000" step="100" value="4500" />
+      </label>
+      <label>
+        Travel time <span class="val" id="val-move">1.8 s</span>
+        <input id="movingMs" type="range" min="600" max="5000" step="50" value="1800" />
+      </label>
+      <label>
+        FPS cap <span class="val" id="val-fps">30</span>
+        <input id="fps" type="range" min="10" max="60" step="5" value="30" />
+      </label>
+      <label class="span-all">
+        Background tint
+        <div class="preset-row" id="bg-row">
+          <button data-bg="gladia" class="active">gladia purple (default)</button>
+          <button data-bg="warm">iGMS warm (cream → orange)</button>
+          <button data-bg="white">pure white</button>
+          <button data-bg="dark">dark plum</button>
+        </div>
+      </label>
+      <label class="span-all">
+        <button id="reshuffle" style="height:34px; border:1px solid var(--color-border-soft); border-radius:6px; background:#FFF; cursor:pointer; font-weight:500;">↻ Reshuffle layout</button>
+      </label>
+    </div>
+  </aside>
+
+  <script type="module">
+    import { CleanerScene } from "./cleaners.js";
+
+    const BG = {
+      gladia: ["#FAF7FF", "#E8D9FF", "#1B0E2A"],
+      warm:   ["#FFFCF4", "#FFE4B5", "#5C3B05"],
+      white:  ["#FFFFFF", "#FFFFFF", "#F4F4F5"],
+      dark:   ["#1B0E2A", "#2A1840", "#0A0517"],
+    };
+
+    const root = document.documentElement;
+    const $ = (id) => document.getElementById(id);
+
+    const svg = document.getElementById("scene");
+    const scene = new CleanerScene(svg, { seed: Date.now() & 0xffff });
+    scene.start();
+
+    function bindRange(id, key, valId, fmt, transform = (v) => v) {
+      $(id).addEventListener("input", (e) => {
+        const v = Number(e.target.value);
+        scene.update({ [key]: transform(v) });
+        $(valId).textContent = fmt(v);
+      });
+    }
+    bindRange("cleanerCount",  "cleanerCount",  "val-cleaners", (v) => `${v}`);
+    bindRange("propertyCount", "propertyCount", "val-props",    (v) => `${v}`);
+    bindRange("cleaningMs",    "cleaningMs",    "val-clean",    (v) => `${(v/1000).toFixed(1)} s`);
+    bindRange("movingMs",      "movingMs",      "val-move",     (v) => `${(v/1000).toFixed(1)} s`);
+    bindRange("fps",           "fps",           "val-fps",      (v) => `${v}`);
+
+    // Stops slider: same value drives both min and max for simplicity.
+    $("routeStops").addEventListener("input", (e) => {
+      const v = Number(e.target.value);
+      scene.update({ routeMinStops: Math.max(2, v - 1), routeMaxStops: v + 1 });
+      $("val-stops").textContent = `${Math.max(2, v - 1)}–${v + 1}`;
+    });
+
+    document.querySelectorAll("[data-bg]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-bg]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        const [top, mid, bot] = BG[b.dataset.bg];
+        root.style.setProperty("--gladia-bg-top", top);
+        root.style.setProperty("--gladia-bg-mid", mid);
+        root.style.setProperty("--gladia-bg-bottom", bot);
+      });
+    });
+
+    $("reshuffle").addEventListener("click", () => {
+      scene.update({ seed: Math.floor(Math.random() * 1e6) });
+    });
+  </script>
+</body>
+</html>
