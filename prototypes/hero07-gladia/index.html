@@ -56,10 +56,13 @@
   <aside class="controls">
     <h3>Hotel day — controls</h3>
     <p style="margin:0 0 14px; color: var(--color-muted); font-size: 12.5px;">
-      9:00am → 11:00pm of a host's day compressed into the demo loop. Green dots
-      are guests, brand-color dots are cleaners, dark amber is the PM. Cleaning
-      starts only after the guest leaves; new guests arrive only after the unit
-      is clean. Cleaner assignments don't overlap.
+      A multi-day cycle of a host's operation, mapped onto the demo loop. Green
+      dots are guests, brand-color dots are cleaners, dark amber is the PM.
+      Cleaning starts only after the guest leaves; new guests arrive only after
+      the unit is clean. Cleaner assignments don't overlap. Workers exit each
+      day after their last task and re-enter the next day if they have work.
+      The full cycle is pre-planned so end-of-cycle state matches the start →
+      loops seamlessly.
     </p>
     <div class="grid">
       <label>
@@ -81,6 +84,10 @@
       <label>
         Long-stay guests <span class="val" id="val-long">2</span>
         <input id="longStayCount" type="range" min="0" max="4" step="1" value="2" />
+      </label>
+      <label>
+        Days in cycle <span class="val" id="val-days">3</span>
+        <input id="dayCount" type="range" min="1" max="5" step="1" value="3" />
       </label>
       <label>
         Day length <span class="val" id="val-day">60 s</span>
@@ -139,6 +146,7 @@
     bindRange("pmCount",          "pmCount",          "val-pms",       (v) => `${v}`);
     bindRange("occupancyAtStart", "occupancyAtStart", "val-occ",       (v) => `${Math.round(v*100)}%`);
     bindRange("longStayCount",    "longStayCount",    "val-long",      (v) => `${v}`);
+    bindRange("dayCount",         "dayCount",         "val-days",      (v) => `${v}`);
     bindRange("dayMs",            "dayMs",            "val-day",       (v) => `${(v/1000).toFixed(0)} s`);
     bindRange("fps",              "fps",              "val-fps",       (v) => `${v}`);
 
