@@ -100,13 +100,64 @@ export class CleanerScene {
       if (e.matches) this._pauseForSmallViewport();
       else this._resumeForSmallViewport();
     });
-    // Debounced resize that preserves simulated time
+    // Resize: rAF-throttled lightweight reposition (NOT a full rebuild).
+    // We only shift existing geometry by Δw/2 so the SVG never "stretches"
+    // mid-drag. Heavy work (re-planning the day) is reserved for explicit
+    // option/seed changes via update()/reshuffle().
     this._onResize = () => {
-      clearTimeout(this._resizeTimer);
-      this._resizeTimer = setTimeout(() => this._layout({ preserveTime: true }), 150);
+      if (this._resizePending) return;
+      this._resizePending = true;
+      requestAnimationFrame(() => {
+        this._resizePending = false;
+        this._fastResize();
+      });
     };
     window.addEventListener("resize", this._onResize);
     this._build();
+  }
+
+  /** Synchronous, cheap resize. Re-fits the SVG viewBox to the new size
+   *  and translates all cached geometry by the center-X delta. No PRNG,
+   *  no DOM rebuilding, no plan regeneration. Property positions stay
+   *  anchored to the central axis. */
+  _fastResize() {
+    if (!this.properties) return;     // not built yet
+    const r = this.svg.getBoundingClientRect();
+    const newW = Math.max(800, r.width);
+    const newH = Math.max(500, r.height);
+    if (newW === this.w && newH === this.h) return;
+    const dx = (newW - this.w) / 2;
+    this.w = newW;
+    this.h = newH;
+    this.svg.setAttribute("viewBox", `0 0 ${this.w} ${this.h}`);
+
+    // Update properties (signedDx is invariant; absolute x re-derives)
+    for (let i = 0; i < this.properties.length; i++) {
+      const p = this.properties[i];
+      p.x = this.w / 2 + p.signedDx;
+      p.y = p.dy;
+      const circle = this._g.properties.children[i * 2];
+      const text   = this._g.properties.children[i * 2 + 1];
+      if (circle) { circle.setAttribute("cx", p.x); circle.setAttribute("cy", p.y); }
+      if (text)   { text.setAttribute("x", p.x + 8); text.setAttribute("y", p.y + 3); }
+    }
+
+    // Translate cached worker geometry by the same dx.
+    // (t.travelFrom is a reference to either session.enterFrom or to a
+    // property — properties already got their new x above, so only the
+    // standalone points need shifting here.)
+    for (const w of this.workers || []) {
+      for (const s of w.sessions) {
+        s.enterFrom.x += dx;
+        s.exitTo.x   += dx;
+        s.exitCtrl.x += dx;
+        for (const t of s.tasks) t.travelCtrl.x += dx;
+      }
+    }
+
+    // Re-render all entities at the current minute so we don't see a frame
+    // of stale positions.
+    this._tick(performance.now());
   }
 
   _pauseForSmallViewport() {
